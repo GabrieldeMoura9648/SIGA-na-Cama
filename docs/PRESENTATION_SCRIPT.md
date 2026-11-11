@@ -1,95 +1,58 @@
-# Roteiro de Apresentação — Motorola Moto E40
+# 🎤 Roteiro de Apresentação: "SIGA na Cama" (5 Minutos Sem Tédio)
 
-**Duração alvo:** 6 minutos (faixa aceitável: 5–7 minutos)
+**Objetivo:** Mostrar que o app resolve a maior dor do estudante da Fatec (calcular se dá para dormir mais um pouco sem perder o semestre) enquanto dá check nos **5 requisitos obrigatórios** de forma leve e divertida.
 
-**Dispositivo:** Motorola Moto E40, tela HD+ 720 × 1600 px, largura lógica aproximada de 360 dp
-**Objetivo:** demonstrar o fluxo do estudante, a persistência local e o despertador sem prometer precisão ou regras acadêmicas além do que o app implementa.
+---
 
-## Preparação antes da banca
+## 🎬 1. Abertura Quebra-Gelo (0:00 - 0:45)
+*(Fale olhando para a turma e para o professor, com o celular na mão)*
 
-Faça estes passos antes de iniciar o cronômetro:
+> "Bom dia/Boa noite, pessoal! Todo aluno da Fatec já viveu aquele dilema filosófico às 6h da manhã num dia chuvoso: **'Será que se eu faltar hoje eu reprovo ou ainda tenho margem?'**
+> Abrir o SIGA pelo celular às 6h da manhã dá até tristeza. Pensando nisso, nós criamos o **SIGA na Cama**: o primeiro assistente acadêmico e despertador inteligente que conhece o regulamento do CEETEPS melhor que a gente e responde, na lata, se a sua cama está liberada ou se você precisa levantar correndo!"
 
-- Instale e abra a versão debug; conclua o onboarding previamente ou deixe-o pronto para a demonstração.
-- Deixe internet disponível para demonstrar a sincronização. O fallback offline em runtime usa `DefaultFatecData`.
-- Confira que o semestre selecionado tem disciplinas e que a grade contém aula no dia da apresentação. O botão **“Vou Faltar Hoje (+Falta)”** só aparece quando há aula cadastrada hoje.
-- Cadastre, se necessário, um evento crítico de teste ou ajuste uma disciplina para que o veredito escolhido seja fácil de explicar. Restaure os valores demonstrativos depois.
-- Em Configurações, conceda notificações e permissão de alarmes exatos quando o Android oferecer essas opções. Confira também as permissões de tela cheia / tela de bloqueio do aparelho.
-- Para a demonstração do alarme, deixe o aparelho acessível, com volume audível e sem modo Não Perturbe que suprima o toque. Use **Testar Alarme Real (5s)** apenas quando estiver pronto.
-- Se a apresentação começar na tela inicial do app, não é necessário forçar o onboarding. Não existe Activity de splash dedicada: a inicialização mostra o indicador/branding do app enquanto lê preferências; o Room é inicializado pela aplicação e pode ser populado na criação do banco.
+---
 
-## 00:00–01:00 — Contexto e abertura
+## 🚀 2. Onboarding, Navegação e DataStore (0:45 - 1:45)
+*(Mostre a tela de Onboarding ou Configurações no celular)*
 
-**Ação:** abra o SIGA na cama e mostre a inicialização/tela inicial.
+* **O que fazer na tela:** Mostre onde coloca o apelido, escolhe o semestre (ex: 4º semestre de DSM) e o perfil de aluno (ex: "No Limite" ou "Calculista"). Clique para ir para a Home.
+* **O que falar (marcando 2 requisitos):**
+  > "Logo de cara, cumprimos dois requisitos obrigatórios:
+  > 1. **Navegação entre telas** (`AppNavHost.kt`): o app sabe sozinho se é a primeira vez do aluno e navega entre o Onboarding, a Home, a agenda de Eventos e as Configurações.
+  > 2. **DataStore** (`UserPreferencesRepository.kt`): o semestre que eu escolhi, meu apelido e meu nível de coragem para faltar ficam salvos no DataStore. Mesmo fechando o app, ele lembra exatamente quem eu sou."
 
-**Fala sugerida:**
+---
 
-“O SIGA na cama ajuda o estudante de DSM da Fatec Diadema a consultar a grade, os eventos e o saldo de faltas num só lugar. O tema Soneca Gamer combina fundo escuro com cores de estado. A inicialização prepara Room, DataStore e os serviços; quando o onboarding já foi concluído, chegamos diretamente ao Oráculo.”
+## 🌐 3. API REST + SQLite/Room na Prática (1:45 - 3:00)
+*(Na tela Home, mostre a lista "Minhas Disciplinas" carregada)*
 
-**Mostrar:** ícone, nome do app, indicador de carregamento se aparecer e navegação inferior.
+* **O que fazer na tela:**
+  1. Mostre os cards das matérias da Fatec com professores e horários.
+  2. Clique no botão `+4` (ou `+2`) em uma matéria para somar faltas e veja a barra mudar de cor.
+  3. Clique no ícone de **Lápis** (`EditSubjectDialog.kt`) ou em **+ Matéria Extra** (`AddExtraSubjectDialog.kt`) para mostrar que o aluno pode fazer matéria de outro semestre.
+* **O que falar (marcando +2 requisitos):**
+  > "Mas de onde vieram todas essas matérias de DSM? Da nossa **API REST** (`FatecApiService.kt`)! Quando escolhemos o semestre, o Retrofit busca na nuvem o catálogo oficial da Fatec e até algumas desculpas criativas caso você precise explicar por que sumiu.
+  > E se o Wi-Fi da Fatec cair? Nós fizemos um sistema *Offline-First*: a API baixa os dados e salva tudo no **SQLite via Room Database** (`AppDatabase.kt`). Se eu editar o nome do professor ou somar minhas faltas aqui, o SQLite marca essa matéria como customizada (`isCustomized`) para nunca perder minhas anotações!"
 
-**Nota:** a tela de carregamento do `AppNavHost` espera o DataStore; não a descreva como splash screen nativa do Android.
+---
 
-## 01:00–02:30 — Onboarding e sincronização
+## 🔮 4. O Oráculo da Falta e as Regras Reais da Fatec (3:00 - 3:45)
+*(Aponte para o Card do Oráculo no topo da Home e clique no ícone de informação `ℹ️`)*
 
-**Ação:** se a banca solicitar, demonstre o onboarding após redefini-lo previamente em Configurações. Se não, mostre o semestre já selecionado e navegue às disciplinas.
+* **O que fazer na tela:** Mostre o veredito do dia e abra o modal de regras do SIGA.
+* **O que falar:**
+  > "Aqui no topo mora o **Oráculo**. Ele cruza os dados do SQLite com o regulamento real da Fatec: limite de 25% de faltas, aviso de que estourar falta bloqueia até o Exame Final, e alerta para matérias de Extensão. Se tiver prova cadastrada na aba de Eventos, o Oráculo fica vermelho na hora e proíbe a soneca!"
 
-**Fala sugerida:**
+---
 
-“No onboarding escolhemos o semestre. A aplicação consulta o catálogo JSON via Retrofit e persiste os dados no Room. A sincronização também pode ser refeita em Configurações. Sem resposta online, o fallback atualmente usado é `DefaultFatecData`, então o app continua funcional offline.”
+## ⏰ 5. O Gran Finale: Notificações Locais e Despertador da Preguiça (3:45 - 5:00)
+*(Vá na aba Configurações e use os botões de teste de 5 segundos)*
 
-**Mostrar:** seleção de semestre, lista **Minhas Disciplinas**, docente, horário, dias e contador de faltas.
-
-**Evitar:** desligar a rede no meio do fluxo sem ter confirmado os dados offline; o arquivo JSON em assets não é o fallback carregado pelo código atual.
-
-## 02:30–03:30 — Oráculo e regras da Fatec
-
-**Ação:** toque em **“POSSO FALTAR HOJE?”** e depois no ícone de informações do card.
-
-**Fala sugerida:**
-
-“O Oráculo avalia primeiro feriados e ausência de aulas, depois eventos críticos, o limite absoluto de faltas e a margem de segurança escolhida. O veredito não substitui o SIGA nem a secretaria. As regras rápidas deixam claro que atestado curto não significa abono automático e que frequência pode impedir o Exame Final.”
-
-**Mostrar:** mensagem e estado do veredito; diálogo **Regras de Sobrevivência (Fatec)**.
-
-**Nota:** o resultado muda com a data, grade, eventos e faltas armazenados. Explique o resultado real que aparecer, sem depender de um veredito específico.
-
-## 03:30–04:30 — Edição e grade flexível
-
-**Ação:** abra o lápis de uma disciplina, mostre os dados editáveis e o ajuste fino; feche sem salvar alterações acidentais. Abra **+ Matéria Extra**, escolha semestre e mostre o dropdown.
-
-**Fala sugerida:**
-
-“O card registra o bloco de aulas do dia; o lápis permite corrigir docente, horário, dias e ajustar faltas unidade por unidade. A matéria extra pesquisa o catálogo do semestre escolhido e preenche os dados ao selecionar um código. Essas alterações são persistidas localmente e marcadas como personalizadas.”
-
-**Mostrar:** no modal extra, as duas linhas de seletores e a lista do dropdown. Para concluir uma inclusão, use uma matéria realmente desejada e confirme a mensagem; caso contrário, cancele.
-
-## 04:30–06:30 — Alarme real e registro de falta
-
-**Ação:** em Configurações, mostre o horário e a seção **Despertador do Oráculo & Preview**. Inicie **Testar Alarme Real (5s)**; quando a tela de alarme abrir, mostre o veredito e as ações. Se houver aula hoje, toque em **“🛌 Vou Faltar Hoje (+Falta)”**. Se não houver aula cadastrada hoje, demonstre Soneca ou Dispensar e explique a condição do botão.
-
-**Fala sugerida:**
-
-“O AlarmManager dispara o receiver, que abre a Activity sobre a tela bloqueada e apresenta uma notificação de alarme. A soneca agenda dez minutos; dispensar encerra o toque. Quando há disciplinas na grade de hoje, o botão de falta soma as aulas do encontro no Room e fecha a tarefa do alarme.”
-
-**Mostrar:** tela de alarme, som/vibração, botão **Soneca (+10 min)**, botão **Dispensar (Vou pra Aula)** e, quando aplicável, **Vou Faltar Hoje (+Falta)**. Depois, retorne à lista para conferir o saldo atualizado.
-
-**Nota de confiabilidade:** alarmes exatos, notificações em tela cheia e exibição sobre bloqueio dependem de permissões e políticas do Android/dispositivo. Se o sistema atrasar ou não abrir a Activity, explique o fallback inexato e mostre o estado da permissão; não prometa garantia em todos os aparelhos.
-
-## Fechamento (até 07:00)
-
-**Fala sugerida:**
-
-“A solução integra interface Compose, estado assíncrono, dados locais, sincronização REST e notificações/alarmes nativos. Os próximos passos são ampliar os testes automatizados, validar regras com fontes oficiais e evoluir recursos como sons personalizados e backup.”
-
-## Checklist de recuperação rápida
-
-| Situação | Ação |
-|---|---|
-| Notificação ou teste não aparece | Verifique permissão de notificações e o canal do app nas Configurações do Android. |
-| Alarme não toca no minuto exato | Confira autorização de alarme exato; explique o fallback do sistema. |
-| Activity não abre sobre a tela bloqueada | Desbloqueie o aparelho e demonstre a tela pelo teste novamente; verifique permissões e política do fabricante. |
-| Botão de registrar falta não aparece | Confirme que a grade ativa tem uma disciplina cujo dia de aula corresponde à data corrente. |
-| Sem internet | Explique que o fallback runtime é `DefaultFatecData`; use dados já carregados no Room. |
-| Onboarding já concluído | Apresente a Home; a redefinição pode ser feita antes da banca em Configurações. |
-
-**Após a apresentação:** restaure as faltas e os eventos modificados para a demonstração e desative o alarme de teste.
+* **O que fazer na tela:**
+  1. Clique em **"Testar Notificação (5s)"** para mostrar a notificação padrão chegando no topo com o ícone da caminha.
+  2. Clique em **"Testar Alarme Real (5s)"** e bloqueie a tela do celular.
+  3. Quando o alarme tocar acendendo a tela (`AlarmRingingActivity.kt`), mostre a mensagem do Oráculo e aperte o botão mágico: **"🛌 Vou Faltar Hoje (+Falta)"**.
+  4. Volte para a Home e mostre que a falta foi registrada sozinha no banco!
+* **O que falar (marcando o 5º requisito com chave de ouro):**
+  > "Para fechar o 5º requisito obrigatório de **Notificações Locais**, nós fomos além: temos o `WorkManager` (`DailyCheckWorker.kt`) que manda notificações diárias e um preview na noite anterior dizendo como será o dia seguinte.
+  > E criamos também o **Despertador Real**: quando ele toca de manhã, você nem precisa fazer conta de cabeça. Se o Oráculo liberou o sono, você aperta **'Vou Faltar Hoje'** direto no despertador: ele cala a boca, soma as faltas do dia automaticamente no SQLite e você volta a dormir em paz. Muito obrigado!"
