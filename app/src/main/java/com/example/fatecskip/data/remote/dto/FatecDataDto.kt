@@ -31,8 +31,11 @@ data class HolidayDto(
     @SerializedName("date")
     val date: String,
 
-    @SerializedName("title")
-    val title: String
+    @SerializedName(value = "name", alternate = ["title"])
+    val name: String,
+
+    @SerializedName("type")
+    val type: String? = null
 )
 
 data class SubjectDto(
@@ -57,4 +60,3 @@ data class SubjectDto(
     @SerializedName("isExtension")
     val isExtension: Boolean = false
 )
-

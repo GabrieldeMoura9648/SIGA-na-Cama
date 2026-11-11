@@ -5,6 +5,8 @@ import com.example.fatecskip.data.local.AppDatabase
 import com.example.fatecskip.data.preferences.UserPreferencesRepository
 import com.example.fatecskip.data.remote.FatecApiService
 import com.example.fatecskip.data.repository.AcademicRepository
+import com.example.fatecskip.data.remote.HolidayApiService
+import com.example.fatecskip.data.repository.HolidayRepository
 import com.example.fatecskip.worker.DailyCheckWorker
 import com.example.fatecskip.worker.AlarmScheduler
 import com.example.fatecskip.worker.NotificationHelper
@@ -30,6 +32,9 @@ class FatecSkipApp : Application() {
     lateinit var repository: AcademicRepository
         private set
 
+    lateinit var holidayRepository: HolidayRepository
+        private set
+
     override fun onCreate() {
         super.onCreate()
         instance = this
@@ -37,6 +42,7 @@ class FatecSkipApp : Application() {
         database = AppDatabase.getDatabase(this)
         preferencesRepository = UserPreferencesRepository(this)
         apiService = FatecApiService.create()
+        holidayRepository = HolidayRepository(HolidayApiService.create())
 
         repository = AcademicRepository(
             subjectDao = database.subjectDao(),

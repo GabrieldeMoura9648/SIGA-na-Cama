@@ -6,12 +6,12 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.util.Log
+import com.example.fatecskip.FatecSkipApp
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.first
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.util.regex.Pattern
-
-import kotlinx.coroutines.flow.first
-import com.example.fatecskip.FatecSkipApp
 
 object AlarmScheduler {
 
@@ -49,10 +49,9 @@ object AlarmScheduler {
             val offset = prefs.alarmAutoOffsetMinutesFlow.first()
             val startTimePattern = Pattern.compile("""(\d{1,2}):(\d{2})""")
 
-            fun alarmTimeFor(date: java.time.LocalDate): LocalDateTime? {
-                val dayOfWeek = date.dayOfWeek.value
-                val firstClassMinutes = subjects.asSequence()
-                    .filter { it.isClassOnDay(dayOfWeek) }
+            val firstClassMinutesByDay = (1..7).mapNotNull { day ->
+                val earliestStart = subjects.asSequence()
+                    .filter { it.isClassOnDay(day) }
                     .mapNotNull { subject ->
                         val match = startTimePattern.matcher(subject.classTime.substringBefore("-"))
                         if (!match.find()) return@mapNotNull null
@@ -64,22 +63,42 @@ object AlarmScheduler {
                         classHour * 60 + classMinute
                     }
                     .minOrNull()
-                    ?: return null
+                earliestStart?.let { day to it }
+            }.toMap()
 
-                return date.atStartOfDay().plusMinutes((firstClassMinutes - offset).toLong())
+            var selectedAutoAlarm: LocalDateTime? = null
+            try {
+                for (dayOffset in 0..366) {
+                    val candidateDate = today.plusDays(dayOffset.toLong())
+                    val firstClassMinutes = firstClassMinutesByDay[candidateDate.dayOfWeek.value] ?: continue
+                    val candidateAlarm = candidateDate.atStartOfDay()
+                        .plusMinutes((firstClassMinutes - offset).toLong())
+                    if (!candidateAlarm.isAfter(now)) continue
+
+                    if (app.holidayRepository.isHoliday(candidateDate)) {
+                        Log.i(TAG, "Alarme automático ignorado em $candidateDate: feriado.")
+                        continue
+                    }
+
+                    selectedAutoAlarm = candidateAlarm
+                    break
+                }
+            } catch (exception: CancellationException) {
+                throw exception
+            } catch (exception: Exception) {
+                Log.e(TAG, "Não foi possível validar feriados; alarme automático desativado por segurança.", exception)
+                cancelDailyAlarm(context)
+                return true
             }
 
-            val nextAutoAlarm = sequenceOf(today, today.plusDays(1))
-                .mapNotNull(::alarmTimeFor)
-                .filter { it.isAfter(now) }
-                .minOrNull()
-
-            if (nextAutoAlarm != null) {
-                nextAlarmDate = nextAutoAlarm.toLocalDate()
-                hour = nextAutoAlarm.hour
-                minute = nextAutoAlarm.minute
+            if (selectedAutoAlarm != null) {
+                nextAlarmDate = selectedAutoAlarm.toLocalDate()
+                hour = selectedAutoAlarm.hour
+                minute = selectedAutoAlarm.minute
             } else {
-                Log.d(TAG, "Nenhum horário de aula futuro hoje ou amanhã; mantendo o horário fixo configurado.")
+                Log.i(TAG, "Nenhum dia letivo futuro encontrado; alarme automático desativado.")
+                cancelDailyAlarm(context)
+                return true
             }
         }
         
@@ -133,6 +152,13 @@ object AlarmScheduler {
             alarmManager.cancel(pendingIntent)
             pendingIntent.cancel()
         }
+    }
+
+    private fun cancelDailyAlarm(context: Context) {
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val pendingIntent = createPendingIntent(context, TYPE_DAILY, REQUEST_DAILY_ALARM)
+        alarmManager.cancel(pendingIntent)
+        pendingIntent.cancel()
     }
 
     fun cancelSnooze(context: Context) {

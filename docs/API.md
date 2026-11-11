@@ -4,6 +4,10 @@
 
 `FatecApiService.kt` usa Retrofit e Gson para baixar o catálogo acadêmico configurado no app. O `AcademicRepository` sincroniza os dados com o Room e mantém seus próprios mecanismos de fallback acadêmico.
 
+## Feriados
+
+`HolidayApiService.kt` consulta de forma assíncrona `GET https://brasilapi.com.br/api/feriados/v1/{year}`. O `HolidayRepository` mantém em memória os feriados nacionais recebidos por ano e também reconhece 9 de julho (estadual de São Paulo) e 8 de dezembro (municipal de Diadema). O agendamento automático ignora datas de aula que sejam feriados; se a consulta remota falhar, desativa o alarme automático por segurança e registra a decisão no log.
+
 ## Sons do MyInstants Brasil
 
 Os sons externos são consultados diretamente no site oficial, sem proxy ou serviço intermediário:

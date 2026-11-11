@@ -345,7 +345,7 @@ class AcademicRepository(
                 // Atualiza / insere feriados
                 val holidays = apiData.semesterInfo?.holidays?.map {
                     EventEntity(
-                        title = it.title,
+                        title = it.name,
                         date = it.date,
                         type = "HOLIDAY",
                         isCritical = false
