@@ -47,6 +47,9 @@ import com.example.fatecskip.worker.AlarmScheduler
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+import java.io.File
+import android.media.AudioAttributes
+import android.media.MediaPlayer
 
 class AlarmRingingActivity : ComponentActivity() {
 
@@ -165,17 +168,46 @@ class AlarmRingingActivity : ComponentActivity() {
     }
 
     private fun startAlarmSound() {
-        if (activeRingtone?.isPlaying == true) return
-        val alarmUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
-        if (alarmUri == null) {
-            Log.w(TAG, "O dispositivo não possui um toque de alarme padrão.")
-            return
+        lifecycleScope.launch {
+            if (activeRingtone?.isPlaying == true || activeMediaPlayer?.isPlaying == true) return@launch
+            
+            try {
+                val app = application as FatecSkipApp
+                val customPath = app.preferencesRepository.customAlarmPathFlow.first()
+                if (!customPath.isNullOrBlank()) {
+                    val file = File(customPath)
+                    if (file.exists() && file.length() > 0) {
+                        activeMediaPlayer = MediaPlayer().apply {
+                            setAudioAttributes(
+                                AudioAttributes.Builder()
+                                    .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                                    .setUsage(AudioAttributes.USAGE_ALARM)
+                                    .build()
+                            )
+                            setDataSource(file.absolutePath)
+                            isLooping = true
+                            prepare()
+                            start()
+                        }
+                        return@launch
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Erro ao tocar som customizado, caindo para fallback.", e)
+            }
+
+            // Fallback: Regra de Ouro
+            val alarmUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+            if (alarmUri == null) {
+                Log.w(TAG, "O dispositivo não possui um toque de alarme padrão.")
+                return@launch
+            }
+            activeRingtone = RingtoneManager.getRingtone(applicationContext, alarmUri)
+            activeRingtone?.let {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) it.isLooping = true
+                it.play()
+            } ?: Log.w(TAG, "Não foi possível iniciar o toque de alarme.")
         }
-        activeRingtone = RingtoneManager.getRingtone(applicationContext, alarmUri)
-        activeRingtone?.let {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) it.isLooping = true
-            it.play()
-        } ?: Log.w(TAG, "Não foi possível iniciar o toque de alarme.")
     }
 
     private fun startVibration() {
@@ -246,11 +278,7 @@ class AlarmRingingActivity : ComponentActivity() {
             try {
                 val preferences = (application as FatecSkipApp).preferencesRepository
                 if (preferences.alarmEnabledFlow.first()) {
-                    val exact = AlarmScheduler.scheduleDailyAlarm(
-                        this@AlarmRingingActivity,
-                        preferences.alarmHourFlow.first(),
-                        preferences.alarmMinuteFlow.first()
-                    )
+                    val exact = AlarmScheduler.scheduleDailyAlarm(this@AlarmRingingActivity)
                     if (!exact) {
                         Toast.makeText(
                             this@AlarmRingingActivity,
@@ -296,11 +324,7 @@ class AlarmRingingActivity : ComponentActivity() {
                 }
 
                 if (preferences.alarmEnabledFlow.first()) {
-                    val exact = AlarmScheduler.scheduleDailyAlarm(
-                        this@AlarmRingingActivity,
-                        preferences.alarmHourFlow.first(),
-                        preferences.alarmMinuteFlow.first()
-                    )
+                    val exact = AlarmScheduler.scheduleDailyAlarm(this@AlarmRingingActivity)
                     if (!exact) {
                         Toast.makeText(
                             this@AlarmRingingActivity,
@@ -330,6 +354,11 @@ class AlarmRingingActivity : ComponentActivity() {
     }
 
     private fun stopAlarmSound() {
+        activeMediaPlayer?.let {
+            if (it.isPlaying) it.stop()
+            it.release()
+        }
+        activeMediaPlayer = null
         activeRingtone?.stop()
         activeRingtone = null
         activeVibrator?.cancel()
@@ -351,6 +380,7 @@ class AlarmRingingActivity : ComponentActivity() {
     companion object {
         private const val TAG = "AlarmRingingActivity"
         private const val KEY_ALARM_HANDLED = "alarm_handled"
+        private var activeMediaPlayer: MediaPlayer? = null
         private var activeRingtone: Ringtone? = null
         private var activeVibrator: Vibrator? = null
         private var isVibrating = false

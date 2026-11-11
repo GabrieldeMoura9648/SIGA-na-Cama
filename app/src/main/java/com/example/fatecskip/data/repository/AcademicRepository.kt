@@ -26,6 +26,10 @@ class AcademicRepository(
     fun getSubjectsForSemester(semester: Int): Flow<List<SubjectEntity>> {
         return subjectDao.getSubjectsBySemester(semester)
     }
+    
+    suspend fun getSubjectsBySemesterList(semester: Int): List<SubjectEntity> {
+        return subjectDao.getSubjectsBySemesterList(semester)
+    }
 
     fun getCatalogSubjectsBySemester(semester: Int): List<SubjectEntity> {
         val allDefaults = DefaultFatecData.getDefaultSubjects()

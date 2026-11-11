@@ -9,6 +9,10 @@ import android.util.Log
 import java.time.LocalDateTime
 import java.time.ZoneId
 
+import kotlinx.coroutines.flow.first
+import com.example.fatecskip.FatecSkipApp
+import java.time.format.DateTimeFormatter
+
 object AlarmScheduler {
 
     const val EXTRA_ALARM_TYPE = "com.example.fatecskip.extra.ALARM_TYPE"
@@ -25,16 +29,54 @@ object AlarmScheduler {
     private const val REQUEST_TEST_NIGHT_PREVIEW = 5105
     private const val TAG = "AlarmScheduler"
 
-    fun scheduleDailyAlarm(context: Context, hour: Int, minute: Int): Boolean {
-        require(hour in 0..23) { "A hora do alarme deve estar entre 0 e 23." }
-        require(minute in 0..59) { "O minuto do alarme deve estar entre 0 e 59." }
-
+    suspend fun scheduleDailyAlarm(context: Context): Boolean {
+        val app = context.applicationContext as FatecSkipApp
+        val prefs = app.preferencesRepository
+        val repo = app.repository
+        
+        val isAuto = prefs.alarmModeFlow.first() == "auto"
+        var hour = prefs.alarmHourFlow.first()
+        var minute = prefs.alarmMinuteFlow.first()
+        
         val now = LocalDateTime.now()
-        var nextAlarm = now.toLocalDate().atTime(hour, minute)
+        var nextAlarmDate = now.toLocalDate()
+        if (now.hour > hour || (now.hour == hour && now.minute >= minute)) {
+            nextAlarmDate = nextAlarmDate.plusDays(1)
+        }
+        
+        if (isAuto) {
+            val semester = prefs.selectedSemesterFlow.first()
+            val tomorrowSubjects = repo.getSubjectsBySemesterList(semester).filter { sub ->
+                sub.daysOfWeek.split(",").mapNotNull { d -> d.trim().toIntOrNull() }.contains(nextAlarmDate.dayOfWeek.value) 
+                || sub.dayOfWeek == nextAlarmDate.dayOfWeek.value
+            }
+            if (tomorrowSubjects.isNotEmpty()) {
+                val earliestTime = tomorrowSubjects.map { it.classTime }.minOrNull() ?: "07:40 - 11:20"
+                val timePart = earliestTime.split("-")[0].trim().replace(Regex("[^0-9:]"), "")
+                val parts = timePart.split(":")
+                if (parts.size >= 2) {
+                    val classHour = parts[0].toIntOrNull() ?: 7
+                    val classMinute = parts[1].toIntOrNull() ?: 40
+                    
+                    val offset = prefs.alarmAutoOffsetMinutesFlow.first()
+                    var totalMinutes = classHour * 60 + classMinute - offset
+                    if (totalMinutes < 0) totalMinutes += 24 * 60
+                    
+                    hour = totalMinutes / 60
+                    minute = totalMinutes % 60
+                }
+            } else {
+                Log.d(TAG, "Nenhuma aula amanhã, mas agendando alarme padrão mesmo assim (pode ser cancelado via UI se desejado).")
+            }
+        }
+        
+        var nextAlarm = nextAlarmDate.atTime(hour, minute)
         if (!nextAlarm.isAfter(now)) nextAlarm = nextAlarm.plusDays(1)
         val triggerAtMillis = nextAlarm.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
         return schedule(context, TYPE_DAILY, REQUEST_DAILY_ALARM, triggerAtMillis)
     }
+
+
 
     fun scheduleSnooze(context: Context, minutes: Int = 10): Boolean {
         require(minutes > 0) { "A duração da soneca deve ser maior que zero." }

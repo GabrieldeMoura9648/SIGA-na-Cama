@@ -14,6 +14,8 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 
+import kotlinx.coroutines.launch
+
 class FatecSkipApp : Application() {
 
     lateinit var database: AppDatabase
@@ -52,13 +54,9 @@ class FatecSkipApp : Application() {
     private fun scheduleSavedAlarms() {
         CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
             preferencesRepository.alarmEnabledFlow
-                .combine(preferencesRepository.alarmHourFlow) { enabled, hour -> enabled to hour }
-                .combine(preferencesRepository.alarmMinuteFlow) { alarm, minute ->
-                    Triple(alarm.first, alarm.second, minute)
-                }
-                .collect { (enabled, hour, minute) ->
+                .collect { enabled ->
                     if (enabled) {
-                        AlarmScheduler.scheduleDailyAlarm(this@FatecSkipApp, hour, minute)
+                        AlarmScheduler.scheduleDailyAlarm(this@FatecSkipApp)
                     } else {
                         AlarmScheduler.cancelAlarm(this@FatecSkipApp)
                     }

@@ -32,6 +32,10 @@ class UserPreferencesRepository(private val context: Context) {
         val KEY_ALARM_HOUR = intPreferencesKey("alarm_hour")
         val KEY_ALARM_MINUTE = intPreferencesKey("alarm_minute")
         val KEY_NIGHT_PREVIEW_ENABLED = booleanPreferencesKey("night_preview_enabled")
+        val KEY_CUSTOM_ALARM_PATH = stringPreferencesKey("custom_alarm_path")
+        val KEY_CUSTOM_ALARM_NAME = stringPreferencesKey("custom_alarm_name")
+        val KEY_ALARM_MODE = stringPreferencesKey("alarm_mode")
+        val KEY_ALARM_AUTO_OFFSET_MINUTES = intPreferencesKey("alarm_auto_offset_minutes")
 
         const val DEFAULT_SEMESTER = 1
         const val DEFAULT_COURAGE_LEVEL = 0.75f // Estudante Médio
@@ -116,6 +120,38 @@ class UserPreferencesRepository(private val context: Context) {
         }
         .map { preferences -> preferences[KEY_NIGHT_PREVIEW_ENABLED] ?: false }
 
+    val customAlarmPathFlow: Flow<String?> = dataStore.data
+        .catch { exception ->
+            if (exception is IOException) emit(emptyPreferences()) else throw exception
+        }
+        .map { preferences ->
+            preferences[KEY_CUSTOM_ALARM_PATH]
+        }
+
+    val customAlarmNameFlow: Flow<String?> = dataStore.data
+        .catch { exception ->
+            if (exception is IOException) emit(emptyPreferences()) else throw exception
+        }
+        .map { preferences ->
+            preferences[KEY_CUSTOM_ALARM_NAME]
+        }
+
+    val alarmModeFlow: Flow<String> = dataStore.data
+        .catch { exception ->
+            if (exception is IOException) emit(emptyPreferences()) else throw exception
+        }
+        .map { preferences ->
+            preferences[KEY_ALARM_MODE] ?: "manual"
+        }
+
+    val alarmAutoOffsetMinutesFlow: Flow<Int> = dataStore.data
+        .catch { exception ->
+            if (exception is IOException) emit(emptyPreferences()) else throw exception
+        }
+        .map { preferences ->
+            preferences[KEY_ALARM_AUTO_OFFSET_MINUTES] ?: 60
+        }
+
     suspend fun setOnboardingCompleted(completed: Boolean = true) {
         dataStore.edit { preferences ->
             preferences[KEY_ONBOARDING_COMPLETED] = completed
@@ -175,6 +211,30 @@ class UserPreferencesRepository(private val context: Context) {
     suspend fun setNightPreviewEnabled(enabled: Boolean) {
         dataStore.edit { preferences ->
             preferences[KEY_NIGHT_PREVIEW_ENABLED] = enabled
+        }
+    }
+
+    suspend fun saveCustomAlarm(path: String?, name: String?) {
+        dataStore.edit { preferences ->
+            if (path == null || name == null) {
+                preferences.remove(KEY_CUSTOM_ALARM_PATH)
+                preferences.remove(KEY_CUSTOM_ALARM_NAME)
+            } else {
+                preferences[KEY_CUSTOM_ALARM_PATH] = path
+                preferences[KEY_CUSTOM_ALARM_NAME] = name
+            }
+        }
+    }
+
+    suspend fun setAlarmMode(mode: String) {
+        dataStore.edit { preferences ->
+            preferences[KEY_ALARM_MODE] = mode
+        }
+    }
+
+    suspend fun setAlarmAutoOffsetMinutes(minutes: Int) {
+        dataStore.edit { preferences ->
+            preferences[KEY_ALARM_AUTO_OFFSET_MINUTES] = minutes
         }
     }
 }

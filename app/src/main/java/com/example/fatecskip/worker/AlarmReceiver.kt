@@ -66,11 +66,7 @@ class AlarmReceiver : BroadcastReceiver() {
                 try {
                     val preferences = UserPreferencesRepository(applicationContext)
                     if (preferences.alarmEnabledFlow.first()) {
-                        AlarmScheduler.scheduleDailyAlarm(
-                            applicationContext,
-                            preferences.alarmHourFlow.first(),
-                            preferences.alarmMinuteFlow.first()
-                        )
+                        AlarmScheduler.scheduleDailyAlarm(applicationContext)
                     }
                 } catch (exception: Exception) {
                     Log.e(TAG, "Não foi possível reagendar o alarme diário.", exception)
