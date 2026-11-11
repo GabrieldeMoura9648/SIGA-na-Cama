@@ -71,12 +71,6 @@ class HomeViewModel(
             )
             _verdict.value = result
             _isEvaluating.value = false
-
-            // Feedback sonoro sintético (Soneca Gamer)
-            val isDanger = result is SkipVerdict.ForbiddenCriticalEvent ||
-                    result is SkipVerdict.ForbiddenAbsenceLimit ||
-                    result is SkipVerdict.WarningSafetyMargin
-            com.example.fatecskip.util.SoundHelper.playVerdictSound(isDanger)
         }
     }
 
