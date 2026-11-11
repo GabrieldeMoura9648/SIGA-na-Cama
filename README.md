@@ -68,7 +68,7 @@ Veja a referência completa em [`docs/REGRAS_E_ROADMAP.md`](docs/REGRAS_E_ROADMA
 1. Clone o repositório:
 
    ```bash
-   git clone https://github.com/DanielFFerre/FatecSkip.git
+   git clone https://github.com/GabrieldeMoura9648/SIGA-na-Cama.git
    ```
 
 2. Abra a pasta `FatecSkip` no Android Studio.
