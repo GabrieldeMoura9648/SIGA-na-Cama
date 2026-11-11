@@ -76,8 +76,8 @@ Detalhes das URLs, parser e blacklist estão em [`API.md`](API.md); o ciclo de c
 `AlarmScheduler.scheduleDailyAlarm()` consulta o modo e as preferências no DataStore e agenda o próximo alarme com `AlarmManager`:
 
 * **Manual (Fixo):** usa a hora e o minuto configurados pelo aluno.
-* **Automático:** obtém o semestre selecionado e consulta as disciplinas por meio do `AcademicRepository`. Para a próxima data de alarme calculada, procura disciplinas cujo dia da semana corresponda, escolhe o menor horário de aula e subtrai o `alarmAutoOffsetMinutes` configurado. O padrão do offset é 60 minutos.
-* **Sem aula na data consultada:** o comportamento atual mantém o horário configurado como base; o scheduler não avança repetidamente até encontrar um próximo dia com aula.
+* **Automático:** obtém o semestre selecionado e consulta as disciplinas por meio do `AcademicRepository`. Procura o próximo horário de aula hoje ou amanhã, seleciona o início mais cedo e subtrai o `alarmAutoOffsetMinutes` configurado. O padrão do offset é 60 minutos.
+* **Sem aula futura hoje ou amanhã:** o comportamento atual mantém o horário fixo configurado como fallback; o scheduler não avança repetidamente até encontrar um próximo dia com aula.
 * **Precisão:** usa `setExactAndAllowWhileIdle` quando permitido pelo Android e recorre a `setAndAllowWhileIdle` quando a permissão de alarme exato não está disponível.
 
 ---

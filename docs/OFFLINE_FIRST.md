@@ -8,7 +8,7 @@ O alarme toca esse arquivo local; portanto, depois de baixado, o som personaliza
 
 ## Fail-Safe no toque do alarme
 
-`AlarmRingingActivity.startAlarmSound()` tenta obter o caminho salvo, confirmar que o arquivo existe e tem tamanho maior que zero e preparar o `MediaPlayer` local em loop. Se o caminho não estiver configurado ou o arquivo estiver ausente/vazio, o fluxo segue para o fallback. Se ocorrer uma exceção ao acessar ou preparar o áudio — por exemplo, erro de I/O ou arquivo inválido — o `catch` registra o erro e também segue para o fallback.
+`AlarmRingingActivity.startAlarmSound()` tenta obter o caminho salvo, confirmar que o arquivo existe e tem tamanho maior que zero e preparar o `MediaPlayer` local em loop. Se o caminho não estiver configurado ou o arquivo estiver ausente/vazio, o fluxo segue para o fallback. Se ocorrer uma exceção ao acessar ou preparar o áudio — por exemplo, erro de I/O ou arquivo inválido — o `catch` registra o erro e também segue para o fallback. Erros assíncronos do player também liberam o recurso e acionam o mesmo fallback.
 
 O fallback usa `RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)` e reproduz o toque nativo do Android. Assim, problemas no áudio personalizado não impedem intencionalmente o alarme de tentar tocar. Se o dispositivo não fornecer um URI padrão ou não for possível iniciar o ringtone, a atividade registra o caso no log.
 
