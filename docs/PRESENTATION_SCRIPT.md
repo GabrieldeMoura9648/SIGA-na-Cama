@@ -50,10 +50,13 @@
 *(Vá na aba Configurações e use os botões de teste de 5 segundos)*
 
 * **O que fazer na tela:**
-  1. Clique em **"Testar Notificação (5s)"** para mostrar a notificação padrão chegando no topo com o ícone da caminha.
-  2. Clique em **"Testar Alarme Real (5s)"** e bloqueie a tela do celular.
-  3. Quando o alarme tocar acendendo a tela (`AlarmRingingActivity.kt`), mostre a mensagem do Oráculo e aperte o botão mágico: **"🛌 Vou Faltar Hoje (+Falta)"**.
-  4. Volte para a Home e mostre que a falta foi registrada sozinha no banco!
+  1. Em **Alarme Matinal Real**, mostre os modos **Automático (Pela 1ª aula)** e **Manual (Fixo)**. No automático, escolha uma antecedência; no manual, configure um horário fixo.
+  2. Em **Som Atual**, abra **Escolher Meme / Som da API**. Mostre a busca inicial temática e os chips de sons do MyInstants Brasil; pré-visualize um resultado e selecione-o para baixar e salvar no cache local.
+  3. Clique em **"Testar Notificação (5s)"** para mostrar a notificação padrão chegando no topo com o ícone da caminha.
+  4. Clique em **"Testar Alarme Real (5s)"** e bloqueie a tela do celular.
+  5. Quando o alarme tocar acendendo a tela (`AlarmRingingActivity.kt`), mostre a mensagem do Oráculo e aperte o botão mágico: **"🛌 Vou Faltar Hoje (+Falta)"**.
+  6. Volte para a Home e mostre que a falta foi registrada sozinha no banco!
 * **O que falar (marcando o 5º requisito com chave de ouro):**
   > "Para fechar o 5º requisito obrigatório de **Notificações Locais**, nós fomos além: temos o `WorkManager` (`DailyCheckWorker.kt`) que manda notificações diárias e um preview na noite anterior dizendo como será o dia seguinte.
-  > E criamos também o **Despertador Real**: quando ele toca de manhã, você nem precisa fazer conta de cabeça. Se o Oráculo liberou o sono, você aperta **'Vou Faltar Hoje'** direto no despertador: ele cala a boca, soma as faltas do dia automaticamente no SQLite e você volta a dormir em paz. Muito obrigado!"
+  > O **Despertador Inteligente** pode usar um horário manual ou calcular o toque pela primeira aula na próxima data de alarme, descontando a antecedência escolhida. Também dá para buscar sons no MyInstants Brasil, ouvir uma prévia e manter o MP3 selecionado no cache privado para uso offline. Se o arquivo personalizado falhar, o app tenta o toque de alarme nativo do Android.
+  > Quando o alarme toca, você não precisa fazer conta de cabeça: se o Oráculo liberou o sono, aperta **'Vou Faltar Hoje'** direto no despertador; ele soma as faltas do dia automaticamente no SQLite. Muito obrigado!"

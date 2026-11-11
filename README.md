@@ -20,7 +20,8 @@ Conciliar horários, provas e frequência pode gerar ansiedade e decisões basea
 - **Eventos:** agenda de eventos e datas cadastradas.
 - **Matéria Extra:** seleção de semestre e catálogo por dropdown, além de cadastro manual.
 - **Configurações:** semestre, margem de alerta, notificações, horário do alarme, preview noturno e sincronização.
-- **Despertador real:** alarme em tela cheia, soneca de 10 minutos, dispensar e registro das faltas das disciplinas com aula hoje.
+- **Despertador inteligente:** modo manual com horário fixo ou modo automático calculado a partir da primeira aula na próxima data de alarme, com antecedência configurável; inclui alarme em tela cheia, soneca de 10 minutos, dispensar e registro das faltas das disciplinas com aula hoje.
+- **Sons personalizados:** busca de sons do MyInstants Brasil com Safe Search acadêmico, prévia em streaming e download para cache privado offline; se o áudio personalizado falhar, o alarme tenta tocar o ringtone nativo do Android.
 - **Preview noturno:** notificação de resumo do veredito para o dia seguinte.
 
 ## Requisitos acadêmicos atendidos
@@ -29,6 +30,7 @@ Conciliar horários, provas e frequência pode gerar ansiedade e decisões basea
 - ✅ **Preferências assíncronas:** DataStore para apelido, semestre, nível de coragem, URL da API, notificações, onboarding e configuração do alarme.
 - ✅ **Persistência local:** Room sobre SQLite para disciplinas, eventos, desculpas e edições personalizadas.
 - ✅ **API REST:** Retrofit/Gson para sincronizar o catálogo JSON; em caso de falha, o repositório repõe os dados locais de `DefaultFatecData`.
+- ✅ **Sons externos e conectividade:** OkHttp consulta diretamente o MyInstants Brasil; o parser HTML usa UTF-8 e blacklist local. O áudio selecionado é armazenado em cache privado para reprodução offline.
 - ✅ **Notificações e alarmes:** WorkManager para tarefas periódicas/adiáveis; AlarmManager para alarme diário, soneca e preview, com fallback inexato quando o sistema não autoriza alarme exato.
 
 **Nota sobre o JSON offline:** `app/src/main/assets/fatec_api.json` e `fatec_api.json` são arquivos JSON do projeto, mas o fallback executado em runtime atualmente usa `DefaultFatecData`; o repositório não lê o asset JSON como fallback. A disponibilidade do alarme exato também depende da versão do Android e da permissão concedida pelo usuário.
@@ -43,8 +45,11 @@ Conciliar horários, provas e frequência pode gerar ansiedade e decisões basea
 | Room / SQLite | Persistência local |
 | DataStore Preferences | Preferências reativas do usuário |
 | Retrofit e Gson | Consumo e desserialização da API REST |
+| OkHttp | Requisições diretas ao MyInstants e download do áudio personalizado |
 | WorkManager | Notificações e tarefas adiáveis |
 | AlarmManager | Disparos de relógio para alarme e preview |
+
+O fluxo MVVM dos sons, conectividade, Safe Search, cache offline e fallback estão documentados em [`docs/CODE_ARCHITECTURE.md`](docs/CODE_ARCHITECTURE.md), [`docs/API.md`](docs/API.md) e [`docs/OFFLINE_FIRST.md`](docs/OFFLINE_FIRST.md).
 
 O projeto usa Gradle Kotlin DSL, Version Catalog e um único módulo Android, `:app`. A configuração declara `minSdk 26`, `compileSdk 36` e `targetSdk 36`.
 

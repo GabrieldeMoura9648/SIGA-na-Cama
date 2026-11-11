@@ -58,11 +58,35 @@ Este guia foi feito para explicar o código para o professor sem enrolação. Em
 
 ---
 
+## ⏰ Sons externos e agendamento inteligente
+
+### Fluxo MVVM dos sons do MyInstants
+
+O seletor de som personalizado é dividido entre interface, estado e acesso a dados:
+
+* **View:** `SettingsScreen.kt` abre o modal isolado `ExternalSoundDialog.kt`. A busca inicial é temática, e os chips rápidos são `☀️ Bom Dia`, `⏰ Acorda`, `🐓 Galo`, `😂 Risada`, `🚨 Sirene` e `🔥 Em Alta BR`.
+* **ViewModel:** `ExternalSoundViewModel.kt` expõe sons, carregamento, mensagens e som selecionado por `StateFlow`. Inicia a busca por “bom dia”, controla a prévia por streaming com `MediaPlayer` e solicita a persistência do som escolhido.
+* **Repository / dados:** `ExternalSoundRepository.kt` busca e analisa os resultados do site, filtra termos impróprios e baixa o MP3 selecionado para o cache privado local. `MyInstantsApiService.kt` configura o `OkHttpClient` usado nessa integração.
+* **Persistência:** `UserPreferencesRepository.kt` usa Preferences DataStore para guardar o caminho e o nome do som selecionado. O arquivo de áudio fica no armazenamento interno do app, separadamente das preferências.
+
+Detalhes das URLs, parser e blacklist estão em [`API.md`](API.md); o ciclo de cache e o fallback do player estão em [`OFFLINE_FIRST.md`](OFFLINE_FIRST.md).
+
+### Despertador Inteligente: automático e manual
+
+`AlarmScheduler.scheduleDailyAlarm()` consulta o modo e as preferências no DataStore e agenda o próximo alarme com `AlarmManager`:
+
+* **Manual (Fixo):** usa a hora e o minuto configurados pelo aluno.
+* **Automático:** obtém o semestre selecionado e consulta as disciplinas por meio do `AcademicRepository`. Para a próxima data de alarme calculada, procura disciplinas cujo dia da semana corresponda, escolhe o menor horário de aula e subtrai o `alarmAutoOffsetMinutes` configurado. O padrão do offset é 60 minutos.
+* **Sem aula na data consultada:** o comportamento atual mantém o horário configurado como base; o scheduler não avança repetidamente até encontrar um próximo dia com aula.
+* **Precisão:** usa `setExactAndAllowWhileIdle` quando permitido pelo Android e recorre a `setAndAllowWhileIdle` quando a permissão de alarme exato não está disponível.
+
+---
+
 ## 🗂️ Resumo Rápido das Pastas (Caso peçam um tour pelo código)
 * `data/local`: Tudo de SQLite/Room (`AppDatabase`, `DAOs` e `Entities`).
 * `data/preferences`: Tudo de DataStore (`UserPreferencesRepository`).
-* `data/remote`: Tudo de API REST (`FatecApiService` e `DTOs`).
-* `data/repository`: O "cérebro" (`AcademicRepository`) que junta API, SQLite e calcula se você vai reprovar por falta.
+* `data/remote`: A API REST acadêmica (`FatecApiService` e DTOs) e o cliente HTTP do MyInstants (`MyInstantsApiService`).
+* `data/repository`: Repositórios acadêmicos e de sons externos, que conectam fontes remotas, persistência local e regras de domínio.
 * `domain/model`: Onde vive o veredito do Oráculo (`SkipVerdict.kt`).
 * `ui/screens`: Todas as telas feitas em Jetpack Compose (`home`, `events`, `onboarding`, `settings`, `alarm`).
 * `worker`: Tudo de Notificações e Alarme em segundo plano.
