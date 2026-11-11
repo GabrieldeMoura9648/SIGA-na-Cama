@@ -1,4 +1,6 @@
-# SIGA na cama 🛏️💤 — O Despertador Inteligente com Consciência Acadêmica para Fatec
+# SIGA na Cama 🛏️💤 — O Despertador Inteligente com Consciência Acadêmica para Fatec
+
+[![Download APK](https://img.shields.io/badge/Download-APK-brightgreen?style=for-the-badge&logo=android)](https://github.com/GabrieldeMoura9648/SIGA-na-Cama/releases/latest)
 
 Aplicativo Android para estudantes de Desenvolvimento de Software Multiplataforma (DSM) da Fatec Diadema. O **Oráculo da Falta** combina a grade cadastrada, eventos acadêmicos e o saldo de faltas para apresentar um alerta contextual; o despertador pode tocar sobre a tela bloqueada e registrar as faltas do dia no Room.
 
@@ -54,37 +56,23 @@ O projeto usa Gradle Kotlin DSL, Version Catalog e um único módulo Android, `:
 
 Veja a referência completa em [`docs/REGRAS_E_ROADMAP.md`](docs/REGRAS_E_ROADMAP.md).
 
-## Como rodar
+## Como Rodar / Instalação
 
-### Pré-requisitos
+### 📲 Opção 1: Instalação Direta no Celular via APK (Mais Rápido — Sem Android Studio)
 
-- Android Studio compatível com Android Gradle Plugin 8.13.2.
-- JDK 17 configurado no Android Studio/Gradle.
-- Android SDK 36 instalado.
-- Um emulador ou dispositivo Android; o Motorola Moto E40 é o aparelho-alvo de validação de interface.
+1. Acesse a aba oficial de [**Releases do Repositório**](https://github.com/GabrieldeMoura9648/SIGA-na-Cama/releases) pelo celular Android ou computador.
+2. Na versão mais recente (Latest Release), baixe o arquivo `.apk` disponível em *Assets*.
+3. Abra o arquivo baixado no seu Android (caso solicitado, autorize a permissão de *"Instalar apps de fontes desconhecidas"* do navegador/arquivos).
+4. Conclua a instalação e abra o **SIGA na Cama**!
 
-### Android Studio
+### 💻 Opção 2: Rodar pelo Código-Fonte (Android Studio)
 
 1. Clone o repositório:
-
    ```bash
    git clone https://github.com/GabrieldeMoura9648/SIGA-na-Cama.git
    ```
-
-2. Abra a pasta `FatecSkip` no Android Studio.
-3. Configure o Gradle para usar JDK 17: **Settings > Build, Execution, Deployment > Build Tools > Gradle > Gradle JDK**.
-4. Aguarde **Sync Project with Gradle Files**. Configure o caminho do Android SDK se solicitado; `local.properties` é específico da máquina e não deve ser compartilhado.
-5. Selecione um dispositivo/emulador e execute a configuração `app`.
-
-### Terminal
-
-Na raiz do projeto, com JDK 17 e Android SDK configurados:
-
-```powershell
-.\gradlew.bat assembleDebug
-```
-
-O APK de debug é gerado em `app/build/outputs/apk/debug/app-debug.apk`.
+2. Abra a pasta raiz no **Android Studio** (certifique-se de utilizar o **JDK 17** nas configurações do Gradle).
+3. Aguarde o Gradle Sync finalizar e clique em **Run ('app')** em um dispositivo físico ou emulador Android 8.0+ (API 26+).
 
 ## Permissões e demonstração
 
