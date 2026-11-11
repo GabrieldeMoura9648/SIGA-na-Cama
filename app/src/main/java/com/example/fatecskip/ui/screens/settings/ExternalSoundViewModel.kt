@@ -2,6 +2,7 @@ package com.example.fatecskip.ui.screens.settings
 
 import android.media.AudioAttributes
 import android.media.MediaPlayer
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -77,35 +78,52 @@ class ExternalSoundViewModel(
 
     fun previewSound(mp3Url: String) {
         stopPreview()
+        val player = MediaPlayer()
+        mediaPlayer = player
         try {
-            mediaPlayer = MediaPlayer().apply {
-                setAudioAttributes(
-                    AudioAttributes.Builder()
-                        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                        .setUsage(AudioAttributes.USAGE_MEDIA)
-                        .build()
-                )
-                setDataSource(mp3Url)
-                prepareAsync()
-                setOnPreparedListener { it.start() }
-                setOnCompletionListener {
-                    it.release()
-                    mediaPlayer = null
+            player.setOnErrorListener { failedPlayer, what, extra ->
+                if (mediaPlayer === failedPlayer) mediaPlayer = null
+                Log.e("ExternalSoundViewModel", "Erro na prévia do áudio ($what/$extra).")
+                failedPlayer.release()
+                true
+            }
+            player.setOnCompletionListener { completedPlayer ->
+                if (mediaPlayer === completedPlayer) mediaPlayer = null
+                completedPlayer.release()
+            }
+            player.setOnPreparedListener { preparedPlayer ->
+                if (mediaPlayer === preparedPlayer) {
+                    preparedPlayer.start()
+                } else {
+                    preparedPlayer.release()
                 }
             }
+            player.setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                    .setUsage(AudioAttributes.USAGE_MEDIA)
+                    .build()
+            )
+            player.setDataSource(mp3Url)
+            player.prepareAsync()
         } catch (e: Exception) {
-            e.printStackTrace()
+            if (mediaPlayer === player) stopPreview() else player.release()
+            _statusMessage.value = "Erro ao reproduzir a prévia do som."
         }
     }
 
     fun stopPreview() {
-        mediaPlayer?.let {
-            if (it.isPlaying) {
-                it.stop()
-            }
-            it.release()
-        }
+        val player = mediaPlayer ?: return
         mediaPlayer = null
+        try {
+            if (player.isPlaying) {
+                player.stop()
+            }
+        } catch (e: IllegalStateException) {
+            Log.w("ExternalSoundViewModel", "Prévia encerrada durante uma transição do player.", e)
+        } finally {
+            player.release()
+        }
     }
 
     fun selectAndDownloadSound(item: MyInstantSoundDto) {
