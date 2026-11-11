@@ -1,13 +1,13 @@
 # 🧠 Arquitetura Descomplicada — SIGA na Cama
 
-Este guia foi feito para explicar o código para o professor sem enrolação. Embora o app tenha recursos avançados (como Despertador Real e Oráculo da Falta), tudo gira em torno dos **5 requisitos obrigatórios**.
+Este guia foi feito para explicar o código para o professor sem enrolação. Embora o app tenha recursos avançados (como Despertador Real e consulta diária de faltas), tudo gira em torno dos **5 requisitos obrigatórios**.
 
 ---
 
 ## 🎯 Os 5 Requisitos Obrigatórios (Onde mostrar no código)
 
 ### 1. Navegação entre Telas (Jetpack Navigation Compose)
-* **A ideia simples:** É o "GPS" do aplicativo. Ele decide se o aluno vai para a tela de Boas-Vindas (Onboarding) na primeira vez que abre o app ou direto para a Tela Principal (Home), além de controlar a barra inferior (Home, Eventos e Configurações).
+* **A ideia simples:** É o "GPS" do aplicativo. Ele decide se o aluno vai para a tela de Boas-Vindas (Onboarding) na primeira vez que abre o app ou direto para a Tela Principal (Meu Dia), além de controlar a barra inferior (Meu Dia, Eventos e Configurações).
 * **Onde abrir para mostrar ao professor:**
   * Acesse na pasta `app/src/main/java/com/example/fatecskip/ui/navigation/AppNavHost.kt`
   * Acesse na pasta `app/src/main/java/com/example/fatecskip/ui/navigation/Screen.kt`
@@ -17,7 +17,7 @@ Este guia foi feito para explicar o código para o professor sem enrolação. Em
 ---
 
 ### 2. DataStore (Armazenamento de Preferências)
-* **A ideia simples:** É o "Post-it" da memória do app. Guarda configurações leves e rápidas do aluno (chave-valor): apelido, semestre atual (1º ao 6º), estilo de aluno (ex: "Focado", "Calculista"), se já fez o Onboarding e o horário do despertador.
+* **A ideia simples:** É o "Post-it" da memória do app. Guarda configurações leves e rápidas do aluno (chave-valor): apelido, semestre atual (1º ao 6º), conclusão do Onboarding, preferências de notificação e horários do despertador e do preview noturno.
 * **Onde abrir para mostrar ao professor:**
   * Acesse na pasta `app/src/main/java/com/example/fatecskip/data/preferences/UserPreferencesRepository.kt`
 * **Pergunta de banca:** *"Por que usar DataStore aqui e não o SQLite?"*
@@ -50,12 +50,14 @@ Este guia foi feito para explicar o código para o professor sem enrolação. Em
 
 ### 5. Notificações Locais (Agendamento e Exibição)
 * **A ideia simples:** Fizemos em dose dupla para garantir nota máxima!
-  1. **Notificação na Barra de Status (`WorkManager`):** Todo dia (ou no preview noturno) o app checa no banco se você pode faltar amanhã e manda uma notificação com ícone personalizado de caminha (`ic_notification_bed.xml`).
-  2. **Despertador de Verdade (`AlarmManager`):** Acende a tela bloqueada do celular na hora exata com a frase do Oráculo e o botão **"🛌 Vou Faltar Hoje (+Falta)"**, que já soma a falta direto no SQLite e deixa você voltar a dormir.
+  1. **Notificação na Barra de Status (`WorkManager`):** O `DailyCheckWorker` avalia o dia seguinte. No preview noturno, cria uma notificação com o título **“Agenda de Amanhã — SIGA na Cama”** e um corpo com as disciplinas e horários, o resumo de frequência e o estado do despertador.
+  2. **Despertador de Verdade (`AlarmManager`):** Acende a tela bloqueada do celular na hora exata com o resumo da grade e o botão **"🛌 Vou Faltar Hoje (+Falta)"**, que já soma a falta direto no SQLite e deixa você voltar a dormir.
+* **Preview noturno configurável:** `UserPreferencesRepository` persiste hora e minuto separados, com padrão 21:00. `SettingsScreen` usa um `TimePickerDialog`; ao salvar, `SettingsViewModel` atualiza a preferência e reagenda o preview se ele estiver ativo. `AlarmScheduler.scheduleNightPreview()` calcula o próximo disparo no horário escolhido, hoje ou no dia seguinte, conforme o horário atual. Ao disparar, `AlarmReceiver` agenda o próximo preview e encaminha a avaliação ao `DailyCheckWorker`.
 * **Onde abrir para mostrar ao professor:**
   * Criação da Notificação: acesse na pasta `app/src/main/java/com/example/fatecskip/worker/NotificationHelper.kt`
   * Trabalho em 2º plano: acesse na pasta `app/src/main/java/com/example/fatecskip/worker/DailyCheckWorker.kt`
-  * Despertador Exato: acesse na pasta `app/src/main/java/com/example/fatecskip/worker/AlarmScheduler.kt` e `app/src/main/java/com/example/fatecskip/ui/screens/alarm/AlarmRingingActivity.kt`
+  * Despertador e preview: acesse `app/src/main/java/com/example/fatecskip/worker/AlarmScheduler.kt` e `app/src/main/java/com/example/fatecskip/worker/AlarmReceiver.kt`
+  * Preferências e seletor de horário: acesse `app/src/main/java/com/example/fatecskip/data/preferences/UserPreferencesRepository.kt` e `app/src/main/java/com/example/fatecskip/ui/screens/settings/SettingsScreen.kt`
 
 ---
 
@@ -90,6 +92,6 @@ Detalhes das URLs, parser e blacklist estão em [`API.md`](API.md); o ciclo de c
 * `data/preferences`: Tudo de DataStore (`UserPreferencesRepository`).
 * `data/remote`: APIs REST acadêmica (`FatecApiService`) e de feriados (`HolidayApiService`), seus DTOs e o cliente HTTP do MyInstants (`MyInstantsApiService`).
 * `data/repository`: Repositórios acadêmicos, de feriados e de sons externos, que conectam fontes remotas, persistência local e regras de domínio.
-* `domain/model`: Onde vive o veredito do Oráculo (`SkipVerdict.kt`).
+* `domain/model`: Onde vive o veredito da consulta diária (`SkipVerdict.kt`).
 * `ui/screens`: Todas as telas feitas em Jetpack Compose (`home`, `events`, `onboarding`, `settings`, `alarm`).
 * `worker`: Tudo de Notificações e Alarme em segundo plano.

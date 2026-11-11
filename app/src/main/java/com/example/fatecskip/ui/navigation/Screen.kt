@@ -12,8 +12,7 @@ sealed class Screen(
     val icon: ImageVector
 ) {
     object Onboarding : Screen("onboarding", "Boas-vindas", Icons.Default.Psychology)
-    object Home : Screen("home", "Oráculo", Icons.Default.Psychology)
+    object Home : Screen("home", "Meu Dia", Icons.Default.Psychology)
     object Events : Screen("events", "Agenda do Caos", Icons.Default.CalendarMonth)
     object Settings : Screen("settings", "Sobrevivência", Icons.Default.Settings)
 }
-

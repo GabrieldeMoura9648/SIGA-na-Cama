@@ -41,7 +41,6 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Slider
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
@@ -50,7 +49,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -95,12 +93,13 @@ fun SettingsScreen(
 
     val nickname by viewModel.studentNickname.collectAsState()
     val semester by viewModel.selectedSemester.collectAsState()
-    val courageLevel by viewModel.courageLevel.collectAsState()
     val notificationsEnabled by viewModel.notificationsEnabled.collectAsState()
     val alarmEnabled by viewModel.alarmEnabled.collectAsState()
     val alarmHour by viewModel.alarmHour.collectAsState()
     val alarmMinute by viewModel.alarmMinute.collectAsState()
     val nightPreviewEnabled by viewModel.nightPreviewEnabled.collectAsState()
+    val nightPreviewHour by viewModel.nightPreviewHour.collectAsState()
+    val nightPreviewMinute by viewModel.nightPreviewMinute.collectAsState()
     val alarmMode by viewModel.alarmMode.collectAsState()
     val alarmAutoOffsetMinutes by viewModel.alarmAutoOffsetMinutes.collectAsState()
     val apiUrl by viewModel.apiUrl.collectAsState()
@@ -109,7 +108,6 @@ fun SettingsScreen(
 
     var nicknameInput by remember(nickname) { mutableStateOf(nickname) }
     var apiUrlInput by remember(apiUrl) { mutableStateOf(apiUrl) }
-    var sliderValue by remember(courageLevel) { mutableFloatStateOf(courageLevel) }
 
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -160,7 +158,7 @@ fun SettingsScreen(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "Ajuste o calibre do seu medo de DP e seu semestre.",
+                        text = "Gerencie sua grade, notificações e recursos do despertador.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -254,71 +252,6 @@ fun SettingsScreen(
                 }
             }
 
-            // Nível de Coragem / Margem de Segurança
-            item {
-                val modeTitle = when {
-                    sliderValue <= 0.6f -> "Modo Nerdola 🤓 (Alerta em 10/20 faltas)"
-                    sliderValue <= 0.85f -> "Estudante Médio 🎓 (Alerta em 15/20 faltas)"
-                    else -> "Modo Vida Loka 💀 (Alerta em 20/20 — No limite!)"
-                }
-
-                val modeDescription = when {
-                    sliderValue <= 0.6f -> "Começa a apitar bem cedo quando atingir 10 faltas. Menor risco de DP."
-                    sliderValue <= 0.85f -> "Equilíbrio clássico. Aviso amarelo só a partir de 15 faltas acumuladas."
-                    else -> "Joga no limite exato! Avisa quando atingir 20/20 faltas, a última parada antes da DP no SIGA."
-                }
-
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(18.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp)
-                    ) {
-                        Text(
-                            text = "Nível de Coragem (Margem de Alerta)",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text(
-                            text = modeTitle,
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        Text(
-                            text = modeDescription,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        Slider(
-                            value = sliderValue,
-                            onValueChange = { sliderValue = it },
-                            onValueChangeFinished = {
-                                viewModel.updateCourageLevel(sliderValue)
-                            },
-                            valueRange = 0.50f..0.95f,
-                            steps = 1
-                        )
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text(text = "10/20 (Nerdola)", style = MaterialTheme.typography.labelSmall)
-                            Text(text = "15/20 (Médio)", style = MaterialTheme.typography.labelSmall)
-                            Text(text = "20/20 (No limite!)", style = MaterialTheme.typography.labelSmall)
-                        }
-                    }
-                }
-            }
-
             // Notificações Locais
             item {
                 Card(
@@ -338,7 +271,7 @@ fun SettingsScreen(
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "Notificações do Oráculo",
+                                    text = "Notificações acadêmicas",
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold
                                 )
@@ -395,7 +328,7 @@ fun SettingsScreen(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Text(
-                            text = "⏰ Despertador do Oráculo & Preview",
+                            text = "⏰ Despertador & Preview",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
@@ -558,7 +491,7 @@ fun SettingsScreen(
                             Column(modifier = Modifier.weight(1f)) {
                                 Text("Preview na Noite Anterior", fontWeight = FontWeight.SemiBold)
                                 Text(
-                                    "Resumo do dia seguinte às 21:00.",
+                                    "Resumo do dia seguinte às %02d:%02d.".format(nightPreviewHour, nightPreviewMinute),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -567,6 +500,24 @@ fun SettingsScreen(
                                 checked = nightPreviewEnabled,
                                 onCheckedChange = { viewModel.updateNightPreviewEnabled(context, it) }
                             )
+                        }
+
+                        OutlinedButton(
+                            onClick = {
+                                TimePickerDialog(
+                                    context,
+                                    { _, hour, minute ->
+                                        viewModel.updateNightPreviewTime(context, hour, minute)
+                                    },
+                                    nightPreviewHour,
+                                    nightPreviewMinute,
+                                    true
+                                ).show()
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text("Alterar horário do preview: %02d:%02d".format(nightPreviewHour, nightPreviewMinute))
                         }
 
                         OutlinedButton(

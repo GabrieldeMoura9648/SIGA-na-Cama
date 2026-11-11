@@ -56,7 +56,7 @@ class AlarmRingingActivity : ComponentActivity() {
     private var isAlarmHandled = false
     private var hasClassesToday by mutableStateOf(false)
     private var isRegisteringAbsences by mutableStateOf(false)
-    private var oracleMessage by mutableStateOf("O Oráculo está consultando seu dia...")
+    private var dailyPlanMessage by mutableStateOf("Consultando sua grade de hoje...")
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -101,7 +101,7 @@ class AlarmRingingActivity : ComponentActivity() {
                         )
                         Spacer(modifier = Modifier.height(24.dp))
                         Text(
-                            text = oracleMessage,
+                            text = dailyPlanMessage,
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             textAlign = TextAlign.Center,
@@ -150,7 +150,7 @@ class AlarmRingingActivity : ComponentActivity() {
             }
         }
 
-        loadOracleVerdict()
+        loadDailyPlan()
     }
 
     private fun showOverLockScreen() {
@@ -259,33 +259,32 @@ class AlarmRingingActivity : ComponentActivity() {
         }
     }
 
-    private fun loadOracleVerdict() {
+    private fun loadDailyPlan() {
         lifecycleScope.launch {
             try {
                 val preferences = (application as FatecSkipApp).preferencesRepository
                 val semester = preferences.selectedSemesterFlow.first()
                 val verdict = (application as FatecSkipApp).repository.evaluateSkipVerdict(
                     date = LocalDate.now(),
-                    semester = semester,
-                    courageLevel = preferences.courageLevelFlow.first()
+                    semester = semester
                 )
                 hasClassesToday = (application as FatecSkipApp).repository
                     .getSubjectsForSemester(semester)
                     .first()
                     .any { it.isClassOnDay(LocalDate.now().dayOfWeek.value) }
-                oracleMessage = when (verdict) {
+                dailyPlanMessage = when (verdict) {
                     is SkipVerdict.ForbiddenCriticalEvent ->
                         "🚨 DIA DE PROVA! Nem pense em ativar o modo soneca!"
                     is SkipVerdict.ForbiddenAbsenceLimit ->
-                        "💀 PROIBIDO FALTAR! Levanta ou perde até o Exame Final!"
+                        "GAME OVER - Você foi reprovado por falta!"
                     is SkipVerdict.Allowed, is SkipVerdict.NoClassOrHoliday ->
-                        "🛌 CAMA AUTORIZADA! O Oráculo liberou seu sono hoje."
+                        "🛌 CAMA AUTORIZADA! Sua grade está livre hoje."
                     is SkipVerdict.WarningSafetyMargin ->
-                        "⚠️ CUIDADO! Você está perto do limite de faltas. Consulte o Oráculo antes de decidir."
+                        "⚠️ CUIDADO! Você está perto do limite de faltas. Confira sua grade no app."
                 }
             } catch (exception: Exception) {
-                Log.e(TAG, "Não foi possível consultar o veredito do Oráculo.", exception)
-                oracleMessage = "⚠️ Não foi possível consultar sua grade. Confira o Oráculo no app."
+                Log.e(TAG, "Não foi possível consultar o resumo acadêmico.", exception)
+                dailyPlanMessage = "⚠️ Não foi possível consultar sua grade. Confira os dados no app."
             }
         }
     }

@@ -6,7 +6,6 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
-import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -23,7 +22,6 @@ class UserPreferencesRepository(private val context: Context) {
 
     companion object {
         val KEY_SELECTED_SEMESTER = intPreferencesKey("selected_semester")
-        val KEY_COURAGE_LEVEL = floatPreferencesKey("courage_level")
         val KEY_STUDENT_NICKNAME = stringPreferencesKey("student_nickname")
         val KEY_NOTIFICATIONS_ENABLED = booleanPreferencesKey("notifications_enabled")
         val KEY_API_URL = stringPreferencesKey("api_url")
@@ -32,13 +30,14 @@ class UserPreferencesRepository(private val context: Context) {
         val KEY_ALARM_HOUR = intPreferencesKey("alarm_hour")
         val KEY_ALARM_MINUTE = intPreferencesKey("alarm_minute")
         val KEY_NIGHT_PREVIEW_ENABLED = booleanPreferencesKey("night_preview_enabled")
+        val KEY_NIGHT_PREVIEW_HOUR = intPreferencesKey("night_preview_hour")
+        val KEY_NIGHT_PREVIEW_MINUTE = intPreferencesKey("night_preview_minute")
         val KEY_CUSTOM_ALARM_PATH = stringPreferencesKey("custom_alarm_path")
         val KEY_CUSTOM_ALARM_NAME = stringPreferencesKey("custom_alarm_name")
         val KEY_ALARM_MODE = stringPreferencesKey("alarm_mode")
         val KEY_ALARM_AUTO_OFFSET_MINUTES = intPreferencesKey("alarm_auto_offset_minutes")
 
         const val DEFAULT_SEMESTER = 1
-        const val DEFAULT_COURAGE_LEVEL = 0.75f // Estudante Médio
         const val DEFAULT_NICKNAME = "Guerreiro da Fatec"
         const val DEFAULT_API_URL = "https://raw.githubusercontent.com/GabrieldeMoura9648/SIGA-na-Cama/feat/rebrand-siga-na-cama/fatec_api.json"
     }
@@ -49,14 +48,6 @@ class UserPreferencesRepository(private val context: Context) {
         }
         .map { preferences ->
             preferences[KEY_SELECTED_SEMESTER] ?: DEFAULT_SEMESTER
-        }
-
-    val courageLevelFlow: Flow<Float> = dataStore.data
-        .catch { exception ->
-            if (exception is IOException) emit(emptyPreferences()) else throw exception
-        }
-        .map { preferences ->
-            preferences[KEY_COURAGE_LEVEL] ?: DEFAULT_COURAGE_LEVEL
         }
 
     val studentNicknameFlow: Flow<String> = dataStore.data
@@ -120,6 +111,18 @@ class UserPreferencesRepository(private val context: Context) {
         }
         .map { preferences -> preferences[KEY_NIGHT_PREVIEW_ENABLED] ?: false }
 
+    val nightPreviewHourFlow: Flow<Int> = dataStore.data
+        .catch { exception ->
+            if (exception is IOException) emit(emptyPreferences()) else throw exception
+        }
+        .map { preferences -> preferences[KEY_NIGHT_PREVIEW_HOUR] ?: 21 }
+
+    val nightPreviewMinuteFlow: Flow<Int> = dataStore.data
+        .catch { exception ->
+            if (exception is IOException) emit(emptyPreferences()) else throw exception
+        }
+        .map { preferences -> preferences[KEY_NIGHT_PREVIEW_MINUTE] ?: 0 }
+
     val customAlarmPathFlow: Flow<String?> = dataStore.data
         .catch { exception ->
             if (exception is IOException) emit(emptyPreferences()) else throw exception
@@ -164,12 +167,6 @@ class UserPreferencesRepository(private val context: Context) {
         }
     }
 
-    suspend fun setCourageLevel(level: Float) {
-        dataStore.edit { preferences ->
-            preferences[KEY_COURAGE_LEVEL] = level
-        }
-    }
-
     suspend fun setStudentNickname(nickname: String) {
         dataStore.edit { preferences ->
             preferences[KEY_STUDENT_NICKNAME] = nickname.ifBlank { DEFAULT_NICKNAME }
@@ -211,6 +208,15 @@ class UserPreferencesRepository(private val context: Context) {
     suspend fun setNightPreviewEnabled(enabled: Boolean) {
         dataStore.edit { preferences ->
             preferences[KEY_NIGHT_PREVIEW_ENABLED] = enabled
+        }
+    }
+
+    suspend fun setNightPreviewTime(hour: Int, minute: Int) {
+        require(hour in 0..23) { "A hora do preview deve estar entre 0 e 23." }
+        require(minute in 0..59) { "O minuto do preview deve estar entre 0 e 59." }
+        dataStore.edit { preferences ->
+            preferences[KEY_NIGHT_PREVIEW_HOUR] = hour
+            preferences[KEY_NIGHT_PREVIEW_MINUTE] = minute
         }
     }
 

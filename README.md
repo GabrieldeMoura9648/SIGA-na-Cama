@@ -4,7 +4,7 @@
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.0+-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)](https://kotlinlang.org/)
 [![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-Material%203-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white)](https://developer.android.com/jetpack/compose)
 
-Aplicativo Android para estudantes de Desenvolvimento de Software Multiplataforma (DSM) da Fatec Diadema. O **Oráculo da Falta** combina a grade cadastrada, eventos acadêmicos e o saldo de faltas para apresentar um alerta contextual; o despertador pode tocar sobre a tela bloqueada e registrar as faltas do dia no Room.
+Aplicativo Android para estudantes de Desenvolvimento de Software Multiplataforma (DSM) da Fatec Diadema. O **SIGA na Cama** combina a grade cadastrada, eventos acadêmicos e o saldo de faltas para apresentar um alerta contextual; o despertador pode tocar sobre a tela bloqueada e registrar as faltas do dia no Room.
 
 > As mensagens do app representam regras configuradas no produto e não substituem o regulamento oficial, o SIGA, a secretaria ou a coordenação. Confirme com a instituição a vigência e a aplicação de regras acadêmicas.
 
@@ -14,20 +14,20 @@ Conciliar horários, provas e frequência pode gerar ansiedade e decisões basea
 
 ## Funcionalidades e telas
 
-- **Onboarding:** configuração inicial e seleção de semestre, com sincronização da grade.
-- **Oráculo / Minhas Disciplinas:** consulta do veredito, saldo e ações de ajuste de faltas.
+- **Onboarding:** configuração inicial, apelido e seleção de semestre, com sincronização da grade.
+- **Meu Dia / Minhas Disciplinas:** consulta do veredito, saldo e ações de ajuste de faltas.
 - **Regras de Sobrevivência (Fatec):** resumo de frequência, Exame Final e atestados.
 - **Eventos:** agenda de eventos e datas cadastradas.
 - **Matéria Extra:** seleção de semestre e catálogo por dropdown, além de cadastro manual.
-- **Configurações:** semestre, margem de alerta, notificações, horário do alarme, preview noturno e sincronização.
+- **Configurações:** semestre, notificações, horário do alarme, horário do preview noturno e sincronização.
 - **Despertador inteligente:** modo manual com horário fixo ou modo automático calculado a partir da primeira aula em um dia letivo futuro, com antecedência configurável. No automático, ignora feriados nacionais consultados na BrasilAPI e feriados estaduais/municipais cadastrados para São Paulo e Diadema; inclui alarme em tela cheia, soneca de 10 minutos, dispensar e registro das faltas das disciplinas com aula hoje.
 - **Sons personalizados:** busca de sons do MyInstants Brasil com Safe Search acadêmico, prévia em streaming e download para cache privado offline; se o áudio personalizado falhar, o alarme tenta tocar o ringtone nativo do Android.
-- **Preview noturno:** notificação de resumo do veredito para o dia seguinte.
+- **Preview noturno:** notificação “Agenda de Amanhã — SIGA na Cama” com as aulas, o veredito do dia seguinte e o estado do despertador. O horário é configurável (padrão 21:00).
 
 ## Requisitos acadêmicos atendidos
 
-- ✅ **Navegação entre telas:** Navigation Compose para onboarding, Oráculo, eventos e configurações.
-- ✅ **Preferências assíncronas:** DataStore para apelido, semestre, nível de coragem, URL da API, notificações, onboarding e configuração do alarme.
+- ✅ **Navegação entre telas:** Navigation Compose para onboarding, Meu Dia, eventos e configurações.
+- ✅ **Preferências assíncronas:** DataStore para apelido, semestre, URL da API, notificações, onboarding, alarmes e horário do preview noturno.
 - ✅ **Persistência local:** Room sobre SQLite para disciplinas, eventos, desculpas e edições personalizadas.
 - ✅ **API REST:** Retrofit/Gson para sincronizar o catálogo JSON; em caso de falha, o repositório repõe os dados locais de `DefaultFatecData`.
 - ✅ **Consulta de feriados:** Retrofit/Gson consulta a BrasilAPI por ano; o modo automático também reconhece 9 de julho (São Paulo) e 8 de dezembro (Diadema). A consulta é assíncrona e os resultados nacionais são mantidos em memória durante a execução.
@@ -56,10 +56,11 @@ O projeto usa Gradle Kotlin DSL, Version Catalog e um único módulo Android, `:
 
 ## Regras de negócio em resumo
 
-- O Oráculo compara as aulas previstas para o dia com o limite de faltas salvo na disciplina.
+- A consulta diária compara as aulas previstas para o dia com o limite de faltas salvo na disciplina.
 - Ao registrar uma falta pelo card ou pelo despertador, o app soma o bloco de aulas do encontro (`classesPerDay`); ajustes finos podem ser feitos no diálogo de edição.
-- O veredito considera feriados/domingos e dias sem aula, eventos críticos, limite absoluto e margem de segurança escolhida. O agendamento automático pula feriados nacionais consultados na BrasilAPI e os feriados fixos de São Paulo e Diadema.
+- O veredito considera feriados/domingos e dias sem aula, eventos críticos, limite absoluto e margem fixa de segurança. O agendamento automático pula feriados nacionais consultados na BrasilAPI e os feriados fixos de São Paulo e Diadema.
 - O app alerta sobre a perda do Exame Final quando reprovação por frequência é prevista e diferencia a mensagem para disciplinas extensionistas.
+- Quando a próxima falta excederia o limite da disciplina, o alerta identifica a reprovação por frequência com o título “GAME OVER”.
 - As informações sobre atestados e Regime Domiciliar são orientativas e devem ser confirmadas com os canais oficiais da Fatec.
 
 Veja a arquitetura e o fluxo de agendamento em [`docs/CODE_ARCHITECTURE.md`](docs/CODE_ARCHITECTURE.md) e a integração de APIs em [`docs/API.md`](docs/API.md).
@@ -84,6 +85,6 @@ Veja a arquitetura e o fluxo de agendamento em [`docs/CODE_ARCHITECTURE.md`](doc
 
 ## Permissões e demonstração
 
-O Android pode solicitar autorização para notificações e alarmes exatos. Para testar o despertador, ative-o em **Configurações > Despertador do Oráculo & Preview**, conceda as permissões exibidas e use **Testar Alarme Real (5s)**. Para conferir o botão **Vou Faltar Hoje (+Falta)**, a grade precisa ter disciplinas com aula na data corrente.
+O Android pode solicitar autorização para notificações e alarmes exatos. Em **Configurações > Despertador & Preview**, o usuário pode ativar o preview noturno e escolher seu horário; o padrão é **21:00**. O preview usa o título **“Agenda de Amanhã — SIGA na Cama”** e apresenta disciplinas previstas, o veredito do dia seguinte e o estado do despertador. Para testar o despertador, conceda as permissões exibidas e use **Testar Alarme Real (5s)**. Para conferir o botão **Vou Faltar Hoje (+Falta)**, a grade precisa ter disciplinas com aula na data corrente.
 
 Consulte o roteiro de demonstração em [`docs/PRESENTATION_SCRIPT.md`](docs/PRESENTATION_SCRIPT.md) e o mapa de camadas em [`docs/CODE_ARCHITECTURE.md`](docs/CODE_ARCHITECTURE.md).

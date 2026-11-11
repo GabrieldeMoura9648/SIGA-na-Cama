@@ -27,7 +27,7 @@ sealed class SkipVerdict(
     )
 
     /**
-     * Veredito Vermelho: Evento crítico no dia (P1, P2, Entrega de TG, etc.)
+     * Veredito Vermelho: Evento crítico no dia (P1, P2, Projeto Integrador, etc.)
      */
     data class ForbiddenCriticalEvent(
         val eventTitle: String,
@@ -50,16 +50,16 @@ sealed class SkipVerdict(
         val maxAbsences: Int,
         val customMessage: String
     ) : SkipVerdict(
-        title = "PROIBIDO FALTAR!",
+        title = "GAME OVER",
         description = customMessage,
-        badgeText = "REPROVAÇÃO POR FALTA",
+        badgeText = "REPROVADO POR FREQUÊNCIA",
         containerColor = Color(0xFFC2185B), // Vermelho / Vinho de perigo
         contentColor = Color.White,
-        emoji = "💀"
+        emoji = "⚠️"
     )
 
     /**
-     * Veredito Amarelo: Faltar hoje ultrapassa a margem de segurança (Nível de coragem).
+     * Veredito Amarelo: Faltar hoje ultrapassa a margem fixa de segurança.
      */
     data class WarningSafetyMargin(
         val subjectName: String,
@@ -84,7 +84,7 @@ sealed class SkipVerdict(
         val customMessage: String,
         val excuse: String
     ) : SkipVerdict(
-        title = "ABENÇOADO PELO ORÁCULO!",
+        title = "DIA FAVORÁVEL!",
         description = customMessage,
         badgeText = "LIBERADO PARA DORMIR",
         containerColor = Color(0xFF2E7D32), // Verde aprovação
@@ -93,4 +93,3 @@ sealed class SkipVerdict(
         suggestedExcuse = excuse
     )
 }
-

@@ -10,6 +10,15 @@ import com.example.fatecskip.data.local.entities.SubjectEntity
  */
 object DefaultFatecData {
 
+    fun getSemesterLabel(semester: Int): String? = listOf(
+        "1º Semestre (Ainda com esperança)",
+        "2º Semestre (Descobrindo onde se meteu)",
+        "3º Semestre (Amigo íntimo do café)",
+        "4º Semestre (Milagreiro da nota 6)",
+        "5º Semestre (Refém do Projeto Integrador)",
+        "6º Semestre (Apenas sobrevivendo)"
+    ).getOrNull(semester - 1)
+
     fun getDefaultSubjects(): List<SubjectEntity> {
         val list = mutableListOf<SubjectEntity>()
 
@@ -161,10 +170,10 @@ object DefaultFatecData {
             ExcuseEntity(text = "A linha do trem quebrou e tive que voltar pra dormir."),
             ExcuseEntity(text = "Minha bateria social descarregou e a Fatec não tem tomada bivolt."),
             ExcuseEntity(text = "Deu NullPointerException na minha motivação nesta manhã."),
-            ExcuseEntity(text = "O Oráculo da Falta me avisou que as estrelas do SIGA não recomendam sair de casa hoje."),
+            ExcuseEntity(text = "O SIGA avisou que hoje é melhor descansar e recuperar as energias."),
             ExcuseEntity(text = "Estou realizando testes de estresse no meu colchão."),
             ExcuseEntity(text = "Fui compilar o café da manhã e deu Timeout."),
-            ExcuseEntity(text = "Fui dar git push na coragem e deu merge conflict."),
+            ExcuseEntity(text = "Fui dar git push sem revisar o código e deu merge conflict."),
             ExcuseEntity(text = "Atestado de um dia não é passe livre: no SIGA, a falta continua no placar!"),
             ExcuseEntity(text = "Perder o Exame Final por falta é o único final que nem uma recuperação de código conserta.")
         )

@@ -122,9 +122,12 @@ object AlarmScheduler {
         return schedule(context, TYPE_TEST, REQUEST_TEST, triggerAtMillis)
     }
 
-    fun scheduleNightPreview(context: Context): Boolean {
+    suspend fun scheduleNightPreview(context: Context): Boolean {
+        val preferences = (context.applicationContext as FatecSkipApp).preferencesRepository
+        val hour = preferences.nightPreviewHourFlow.first()
+        val minute = preferences.nightPreviewMinuteFlow.first()
         val now = LocalDateTime.now()
-        var nextPreview = now.toLocalDate().atTime(21, 0)
+        var nextPreview = now.toLocalDate().atTime(hour, minute)
         if (!nextPreview.isAfter(now)) nextPreview = nextPreview.plusDays(1)
         val triggerAtMillis = nextPreview.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
         return schedule(context, TYPE_NIGHT_PREVIEW, REQUEST_NIGHT_PREVIEW, triggerAtMillis)

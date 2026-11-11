@@ -13,7 +13,7 @@ import com.example.fatecskip.MainActivity
 object NotificationHelper {
 
     const val CHANNEL_ID = "siga_na_cama_oracle_v2"
-    const val CHANNEL_NAME = "Oráculo SIGA na cama"
+    const val CHANNEL_NAME = "Resumo acadêmico SIGA na cama"
     const val CHANNEL_DESC = "Notificações diárias sobre provas críticas, feriados e risco de DP"
     const val NOTIFICATION_ID = 4200
 
@@ -65,4 +65,3 @@ object NotificationHelper {
         }
     }
 }
-

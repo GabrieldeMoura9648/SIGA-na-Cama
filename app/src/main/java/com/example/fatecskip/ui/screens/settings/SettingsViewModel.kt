@@ -27,9 +27,6 @@ class SettingsViewModel(
     val selectedSemester: StateFlow<Int> = preferencesRepository.selectedSemesterFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 1)
 
-    val courageLevel: StateFlow<Float> = preferencesRepository.courageLevelFlow
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.75f)
-
     val notificationsEnabled: StateFlow<Boolean> = preferencesRepository.notificationsEnabledFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
@@ -54,6 +51,12 @@ class SettingsViewModel(
     val nightPreviewEnabled: StateFlow<Boolean> = preferencesRepository.nightPreviewEnabledFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
+    val nightPreviewHour: StateFlow<Int> = preferencesRepository.nightPreviewHourFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 21)
+
+    val nightPreviewMinute: StateFlow<Int> = preferencesRepository.nightPreviewMinuteFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+
     private val _isSyncing = MutableStateFlow(false)
     val isSyncing: StateFlow<Boolean> = _isSyncing.asStateFlow()
 
@@ -76,23 +79,11 @@ class SettingsViewModel(
         }
     }
 
-    fun updateCourageLevel(level: Float) {
-        viewModelScope.launch {
-            preferencesRepository.setCourageLevel(level)
-            val description = when {
-                level <= 0.6f -> "Modo Nerdola ativado! (Alerta cedo)"
-                level <= 0.8f -> "Modo Estudante Médio ativado! (Equilíbrio sono/diploma)"
-                else -> "Modo Vida Loka ativado! (Alerta só na beira do abismo)"
-            }
-            _feedbackMessage.value = description
-        }
-    }
-
     fun updateNotificationsEnabled(enabled: Boolean) {
         viewModelScope.launch {
             preferencesRepository.setNotificationsEnabled(enabled)
             _feedbackMessage.value = if (enabled) {
-                "Notificações ativadas! O Oráculo vai te vigiar."
+                "Notificações ativadas! Você receberá lembretes acadêmicos."
             } else {
                 "Notificações desativadas. Durma por sua conta e risco."
             }
@@ -126,7 +117,7 @@ class SettingsViewModel(
             preferencesRepository.setStudentNickname(currentNicknameInput)
             
             DailyCheckWorker.scheduleTestNotification(context, delaySeconds = 5)
-            _feedbackMessage.value = "⚡ Teste agendado! Em 5 segundos o Oráculo enviará uma notificação..."
+            _feedbackMessage.value = "⚡ Teste agendado! Em 5 segundos você receberá uma notificação..."
         }
     }
 
@@ -184,9 +175,9 @@ class SettingsViewModel(
             if (enabled) {
                 val exact = AlarmScheduler.scheduleNightPreview(context)
                 _feedbackMessage.value = if (exact) {
-                    "🌙 Preview noturno ativado para as 21:00."
+                    "🌙 Preview noturno ativado para ${formatNightPreviewTime()}."
                 } else {
-                    "🌙 Preview ativado para as 21:00, sem precisão exata."
+                    "🌙 Preview ativado para ${formatNightPreviewTime()}, sem precisão exata."
                 }
             } else {
                 AlarmScheduler.cancelNightPreview(context)
@@ -194,6 +185,19 @@ class SettingsViewModel(
             }
         }
     }
+
+    fun updateNightPreviewTime(context: Context, hour: Int, minute: Int) {
+        viewModelScope.launch {
+            preferencesRepository.setNightPreviewTime(hour, minute)
+            if (nightPreviewEnabled.value) {
+                AlarmScheduler.scheduleNightPreview(context)
+            }
+            _feedbackMessage.value = "Horário do preview atualizado para ${"%02d:%02d".format(hour, minute)}."
+        }
+    }
+
+    private fun formatNightPreviewTime(): String =
+        "%02d:%02d".format(nightPreviewHour.value, nightPreviewMinute.value)
 
     fun triggerTestAlarm(context: Context) {
         viewModelScope.launch {

@@ -29,9 +29,6 @@ class HomeViewModel(
     val selectedSemester: StateFlow<Int> = preferencesRepository.selectedSemesterFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 1)
 
-    val courageLevel: StateFlow<Float> = preferencesRepository.courageLevelFlow
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.75f)
-
     // Lista reativa de matérias para o semestre atual
     val subjects: StateFlow<List<SubjectEntity>> = selectedSemester
         .flatMapLatest { semester ->
@@ -56,15 +53,14 @@ class HomeViewModel(
         }
     }
 
-    fun consultOracle() {
+    fun evaluateToday() {
         viewModelScope.launch {
             _isEvaluating.value = true
-            // Suspense cômico do Oráculo calculando
+            // Mantém a animação de carregamento visível durante o cálculo.
             delay(500)
             val result = repository.evaluateSkipVerdict(
                 date = LocalDate.now(),
-                semester = selectedSemester.value,
-                courageLevel = courageLevel.value
+                semester = selectedSemester.value
             )
             _verdict.value = result
             _isEvaluating.value = false
@@ -90,7 +86,7 @@ class HomeViewModel(
             )
             _userFeedback.value = "Matéria de DP adicionada com sucesso no ${semester}º semestre!"
             if (_verdict.value != null) {
-                consultOracle()
+                evaluateToday()
             }
         }
     }
@@ -112,7 +108,7 @@ class HomeViewModel(
             )
             _userFeedback.value = "Matéria atualizada!"
             if (_verdict.value != null) {
-                consultOracle()
+                evaluateToday()
             }
         }
     }
@@ -148,7 +144,7 @@ class HomeViewModel(
             repository.removeSubjectFromGrade(subjectId)
             _userFeedback.value = "Matéria '$subjectName' retirada da sua grade."
             if (_verdict.value != null) {
-                consultOracle()
+                evaluateToday()
             }
         }
     }
@@ -158,7 +154,7 @@ class HomeViewModel(
             repository.incrementAbsence(subject, count)
             // Se já tiver veredito na tela, atualiza automaticamente
             if (_verdict.value != null) {
-                consultOracle()
+                evaluateToday()
             }
         }
     }
@@ -167,7 +163,7 @@ class HomeViewModel(
         viewModelScope.launch {
             repository.decrementAbsence(subject, count)
             if (_verdict.value != null) {
-                consultOracle()
+                evaluateToday()
             }
         }
     }

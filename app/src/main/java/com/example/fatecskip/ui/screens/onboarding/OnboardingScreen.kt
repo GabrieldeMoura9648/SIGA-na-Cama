@@ -53,6 +53,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.fatecskip.data.local.DefaultFatecData
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
@@ -64,9 +65,8 @@ fun OnboardingScreen(
     val currentStep by viewModel.currentStep.collectAsState()
     val nickname by viewModel.nickname.collectAsState()
     val semester by viewModel.selectedSemester.collectAsState()
-    val courageLevel by viewModel.courageLevel.collectAsState()
 
-    val progress = currentStep / 3f
+    val progress = currentStep / 2f
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -92,7 +92,7 @@ fun OnboardingScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = "Passo $currentStep de 3",
+                        text = "Passo $currentStep de 2",
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
@@ -141,10 +141,6 @@ fun OnboardingScreen(
                             selectedSemester = semester,
                             onSelectSemester = { viewModel.selectSemester(it) }
                         )
-                        3 -> StepCourage(
-                            courageLevel = courageLevel,
-                            onSelectCourage = { viewModel.selectCourageLevel(it) }
-                        )
                     }
                 }
             }
@@ -173,7 +169,7 @@ fun OnboardingScreen(
                     Spacer(modifier = Modifier.width(1.dp))
                 }
 
-                if (currentStep < 3) {
+                if (currentStep < 2) {
                     Button(
                         onClick = { viewModel.nextStep() },
                         shape = RoundedCornerShape(14.dp),
@@ -206,7 +202,7 @@ fun OnboardingScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Entrar no Oráculo",
+                            text = "Começar",
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -231,14 +227,14 @@ private fun StepNickname(
             modifier = Modifier.size(80.dp)
         ) {
             Box(contentAlignment = Alignment.Center) {
-                Text(text = "🔮", fontSize = 42.sp)
+                Text(text = "🛌", fontSize = 42.sp)
             }
         }
 
         Spacer(modifier = Modifier.height(24.dp))
 
         Text(
-            text = "O Oráculo te dá as boas-vindas!",
+            text = "Planeje seu descanso e gerencie sua grade com inteligência.",
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Black,
             textAlign = TextAlign.Center
@@ -273,14 +269,11 @@ private fun StepSemester(
     selectedSemester: Int,
     onSelectSemester: (Int) -> Unit
 ) {
-    val labels = listOf(
-        1 to "1º Semestre (Calouro)",
-        2 to "2º Semestre (Sobrevivente)",
-        3 to "3º Semestre (Pleno)",
-        4 to "4º Semestre (Veterano)",
-        5 to "5º Semestre (Em crise de TG)",
-        6 to "6º Semestre (Quase formado!)"
-    )
+    val labels = (1..6).mapNotNull { semester ->
+        DefaultFatecData.getSemesterLabel(semester)?.let { label ->
+            semester to label
+        }
+    }
 
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -362,119 +355,3 @@ private fun StepSemester(
         }
     }
 }
-
-@Composable
-private fun StepCourage(
-    courageLevel: Float,
-    onSelectCourage: (Float) -> Unit
-) {
-    val modes = listOf(
-        Triple(
-            0.50f,
-            "Modo Nerdola 🤓 (Alerta em 10/20 faltas)",
-            "Começa a apitar bem cedo quando atingir 10 faltas. Menor risco de DP."
-        ),
-        Triple(
-            0.75f,
-            "Estudante Médio 🎓 (Alerta em 15/20 faltas)",
-            "Equilíbrio clássico. Aviso amarelo só a partir de 15 faltas acumuladas."
-        ),
-        Triple(
-            0.95f,
-            "Modo Vida Loka 💀 (Alerta em 20/20 — No limite!)",
-            "Joga no limite exato! Avisa quando atingir 20/20 faltas, a última parada antes da DP no SIGA."
-        )
-    )
-
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Surface(
-            shape = CircleShape,
-            color = MaterialTheme.colorScheme.tertiaryContainer,
-            modifier = Modifier.size(80.dp)
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Text(text = "⚡", fontSize = 42.sp)
-            }
-        }
-
-        Spacer(modifier = Modifier.height(20.dp))
-
-        Text(
-            text = "Calibre seu Nível de Coragem",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Black,
-            textAlign = TextAlign.Center
-        )
-
-        Spacer(modifier = Modifier.height(6.dp))
-
-        Text(
-            text = "Quando o Oráculo deve começar a emitir os alertas amarelos de risco?",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
-        )
-
-        Spacer(modifier = Modifier.height(20.dp))
-
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            modes.forEach { (level, title, desc) ->
-                val isSelected = kotlin.math.abs(courageLevel - level) < 0.05f
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onSelectCourage(level) },
-                    shape = RoundedCornerShape(16.dp),
-                    border = BorderStroke(
-                        width = if (isSelected) 2.dp else 1.dp,
-                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
-                    ),
-                    colors = CardDefaults.cardColors(
-                        containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f) else MaterialTheme.colorScheme.surface
-                    )
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = title,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                            )
-                            if (isSelected) {
-                                Icon(
-                                    imageVector = Icons.Default.Check,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                        }
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text(
-                            text = desc,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            lineHeight = 18.sp
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-

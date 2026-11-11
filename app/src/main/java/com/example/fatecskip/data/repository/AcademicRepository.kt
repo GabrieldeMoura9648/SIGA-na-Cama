@@ -207,13 +207,12 @@ class AcademicRepository(
     }
 
     /**
-     * Algoritmo central do "Posso Faltar Hoje?" / Oráculo da Preguiça.
+     * Algoritmo central do "Posso Faltar Hoje?".
      * Avalia o dia atual contra feriados, eventos críticos e limites de faltas no SIGA.
      */
     suspend fun evaluateSkipVerdict(
         date: LocalDate = LocalDate.now(),
-        semester: Int,
-        courageLevel: Float
+        semester: Int
     ): SkipVerdict {
         val dateString = date.format(DateTimeFormatter.ISO_LOCAL_DATE) // YYYY-MM-DD
         val dayOfWeek = date.dayOfWeek.value // 1 (Segunda) .. 7 (Domingo)
@@ -243,13 +242,13 @@ class AcademicRepository(
         if (subjectsToday.isEmpty()) {
             val messages = listOf(
                 "Hoje não tem nenhuma aula cadastrada para o seu semestre (${semester}º). Pode maratonar série em paz!",
-                "Grade zerada hoje! O Oráculo informa que o seu único compromisso é descansar a mente.",
+                "Grade zerada hoje! Seu único compromisso é descansar a mente.",
                 "Sem aulas hoje no SIGA para o ${semester}º semestre. Aproveite o dia sem estresse!"
             )
             return SkipVerdict.NoClassOrHoliday("Sem aulas hoje", messages.random())
         }
 
-        // 2. Verificação de Evento Crítico (Provas P1/P2, entregas de TG, etc.)
+        // 2. Verificação de Evento Crítico (Provas P1/P2, entregas de Projeto Integrador, etc.)
         val criticalEventsToday = eventDao.getCriticalEventsByDate(dateString)
         if (criticalEventsToday.isNotEmpty()) {
             val eventTitle = criticalEventsToday.first().title
@@ -270,8 +269,11 @@ class AcademicRepository(
                 } else {
                     ""
                 }
-                val customMessage =
-                    "PROIBIDO FALTAR! Com mais uma falta em '${subject.name}' ($simulatedAbsences/${subject.maxAbsences}), você ultrapassa o limite de 25% de faltas e fica com menos de 75% de presença. A reprovação por frequência bloqueia totalmente o direito ao Exame Final, mesmo com média entre 4,0 e 5,9: é reprovação direta.$extensionWarning"
+                val customMessage = listOf(
+                    "Você foi reprovado por falta!",
+                    "Continue? (0 créditos)",
+                    "Missão Falhada: O sono venceu o semestre"
+                ).random() + " Limite ultrapassado em '${subject.name}' ($simulatedAbsences/${subject.maxAbsences} faltas). A reprovação por frequência bloqueia o Exame Final.$extensionWarning"
                 return SkipVerdict.ForbiddenAbsenceLimit(
                     subject.name,
                     subject.currentAbsences,
@@ -281,10 +283,10 @@ class AcademicRepository(
             }
         }
 
-        // 4. Verificação de Margem de Segurança (Nível de Coragem do Aluno)
+        // 4. Verificação da margem fixa de segurança (75% do limite de faltas)
         val excuse = getRandomExcuse()
         for (subject in subjectsToday) {
-            val dangerThreshold = (subject.maxAbsences * courageLevel).toInt()
+            val dangerThreshold = (subject.maxAbsences * 0.75f).toInt()
             val simulatedAbsences = subject.currentAbsences + subject.classesPerDay
             if (simulatedAbsences > dangerThreshold) {
                 val messages = if (subject.isExtension) {
@@ -312,10 +314,10 @@ class AcademicRepository(
 
         // 5. Veredito Verde (Liberado!)
         val allowedMessages = listOf(
-            "Abençoado pelo Oráculo! Sem provas críticas e faltas sob total controle. A cama te chama, guerreiro!",
+            "Dia favorável! Sem provas críticas e faltas sob total controle. A cama te chama, guerreiro!",
             "LIBERADO COM LOUVOR! Faltar hoje é 100% taticamente seguro. O SIGA nem vai notar sua ausência!",
             "Pode meter o louco hoje! Seu saldo de faltas tá limpo e não tem nada crítico no radar. Bom descanso!",
-            "Oráculo aprovou o sono! Hoje a aula pode esperar e o cobertor venceu por nocaute técnico."
+            "Hoje a aula pode esperar e o cobertor venceu por nocaute técnico."
         )
         return SkipVerdict.Allowed(
             customMessage = allowedMessages.random(),

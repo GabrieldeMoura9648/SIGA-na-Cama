@@ -32,7 +32,6 @@ class DailyCheckWorker(
 
             val database = AppDatabase.getDatabase(context)
             val semester = preferences.selectedSemesterFlow.first()
-            val courageLevel = preferences.courageLevelFlow.first()
             val nickname = preferences.studentNicknameFlow.first()
 
             val tomorrow = LocalDate.now().plusDays(1)
@@ -42,14 +41,13 @@ class DailyCheckWorker(
             if (inputData.getBoolean(IS_NIGHT_PREVIEW, false)) {
                 val verdict = FatecSkipApp.instance.repository.evaluateSkipVerdict(
                     date = tomorrow,
-                    semester = semester,
-                    courageLevel = courageLevel
+                    semester = semester
                 )
-                val summary = when (verdict) {
+                val verdictSummary = when (verdict) {
                     is SkipVerdict.ForbiddenCriticalEvent ->
                         "🚨 Dia de evento crítico: ${verdict.eventTitle}. Nada de faltar!"
                     is SkipVerdict.ForbiddenAbsenceLimit ->
-                        "💀 Faltar em ${verdict.subjectName} ultrapassa o limite e bloqueia o Exame Final."
+                        "GAME OVER - Reprovação por frequência em ${verdict.subjectName}; sem direito ao Exame Final."
                     is SkipVerdict.WarningSafetyMargin ->
                         "⚠️ Atenção às faltas em ${verdict.subjectName}: você está na margem de risco."
                     is SkipVerdict.Allowed ->
@@ -57,10 +55,29 @@ class DailyCheckWorker(
                     is SkipVerdict.NoClassOrHoliday ->
                         "🛌 ${verdict.customMessage}"
                 }
+                val tomorrowSubjects = database.subjectDao()
+                    .getSubjectsBySemesterList(semester)
+                    .filter { it.isClassOnDay(tomorrowDayOfWeek) }
+                val classesSummary = if (tomorrowSubjects.isEmpty()) {
+                    "Sem aulas cadastradas."
+                } else {
+                    "Aulas: " + tomorrowSubjects.joinToString { "${it.name} (${it.classTime})" }
+                }
+                val alarmSummary = if (preferences.alarmEnabledFlow.first()) {
+                    when (preferences.alarmModeFlow.first()) {
+                        "auto" -> "Despertador automático ativo."
+                        else -> "Despertador ativo às %02d:%02d.".format(
+                            preferences.alarmHourFlow.first(),
+                            preferences.alarmMinuteFlow.first()
+                        )
+                    }
+                } else {
+                    "Despertador desativado."
+                }
                 NotificationHelper.showNotification(
                     context = context,
-                    title = "🌙 Preview de Amanhã",
-                    message = "🌙 Preview de Amanhã: $summary",
+                    title = "Agenda de Amanhã — SIGA na Cama",
+                    message = "$classesSummary\n$verdictSummary\n$alarmSummary",
                     notificationId = 1010
                 )
                 return Result.success()
@@ -96,7 +113,7 @@ class DailyCheckWorker(
             val allSemesterSubjects = database.subjectDao().getSubjectsBySemesterList(semester)
             val tomorrowSubjects = allSemesterSubjects.filter { it.isClassOnDay(tomorrowDayOfWeek) }
             val dangerSubject = tomorrowSubjects.firstOrNull { subject ->
-                val threshold = (subject.maxAbsences * courageLevel).toInt()
+                val threshold = (subject.maxAbsences * 0.75f).toInt()
                 (subject.currentAbsences + subject.classesPerDay) >= threshold
             }
 
@@ -114,14 +131,14 @@ class DailyCheckWorker(
             // 4. Teste ou aviso diário de tranquilidade
             NotificationHelper.showNotification(
                 context = context,
-                title = "🔮 Oráculo da Falta informa:",
+                title = "📚 Resumo acadêmico:",
                 message = "Salve $nickname! Amanhã o dia está favorável. Suas faltas estão dentro da margem de segurança. Durma em paz!",
                 notificationId = 1004
             )
 
             Result.success()
         } catch (e: Exception) {
-            Log.e("DailyCheckWorker", "Falha ao gerar a notificação diária do Oráculo.", e)
+            Log.e("DailyCheckWorker", "Falha ao gerar a notificação acadêmica diária.", e)
             Result.failure()
         }
     }

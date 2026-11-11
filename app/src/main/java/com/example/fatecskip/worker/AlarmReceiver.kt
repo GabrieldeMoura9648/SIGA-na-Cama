@@ -96,10 +96,10 @@ class AlarmReceiver : BroadcastReceiver() {
             notificationManager.createNotificationChannel(
                 NotificationChannel(
                     ALARM_CHANNEL_ID,
-                    "Despertador do Oráculo",
+                    "Despertador SIGA na Cama",
                     NotificationManager.IMPORTANCE_HIGH
                 ).apply {
-                    description = "Alarmes matinais com o veredito do Oráculo"
+                    description = "Alarmes matinais com o resumo da sua grade"
                     enableVibration(true)
                     lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
                 }
@@ -118,7 +118,7 @@ class AlarmReceiver : BroadcastReceiver() {
         )
         val notification = NotificationCompat.Builder(context, ALARM_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification_bed)
-            .setContentTitle("⏰ Hora de consultar o Oráculo!")
+            .setContentTitle("⏰ Hora de conferir sua grade!")
             .setContentText("Seu despertador está tocando. Levante para conferir o dia.")
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setPriority(NotificationCompat.PRIORITY_MAX)

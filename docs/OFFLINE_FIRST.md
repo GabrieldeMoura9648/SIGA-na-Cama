@@ -20,4 +20,4 @@ O fallback usa `RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)` e rep
 
 ## Agendamento
 
-O `AlarmScheduler` usa `AlarmManager` para os disparos diários e a soneca. Quando alarmes exatos não são permitidos pelo sistema, usa `setAndAllowWhileIdle` como alternativa menos precisa. As regras do modo automático e manual estão descritas em [`CODE_ARCHITECTURE.md`](CODE_ARCHITECTURE.md#despertador-inteligente-automático-e-manual).
+O `AlarmScheduler` usa `AlarmManager` para os disparos diários, a soneca e o preview noturno. O horário do preview é salvo no Preferences DataStore como hora e minuto, com padrão 21:00, e pode ser alterado em Configurações. Ao mudar o horário com o preview ativo, o próximo disparo é reagendado; após cada disparo normal, o `AlarmReceiver` agenda o seguinte. Quando alarmes exatos não são permitidos pelo sistema, usa `setAndAllowWhileIdle` como alternativa menos precisa. As regras do modo automático e manual estão descritas em [`CODE_ARCHITECTURE.md`](CODE_ARCHITECTURE.md#despertador-inteligente-automático-e-manual).

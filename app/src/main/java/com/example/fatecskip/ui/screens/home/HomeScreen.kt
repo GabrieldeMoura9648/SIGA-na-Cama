@@ -93,7 +93,6 @@ fun HomeScreen(
     val context = LocalContext.current
     val nickname by viewModel.studentNickname.collectAsState()
     val semester by viewModel.selectedSemester.collectAsState()
-    val courageLevel by viewModel.courageLevel.collectAsState()
     val subjects by viewModel.subjects.collectAsState()
     val verdict by viewModel.verdict.collectAsState()
     val isEvaluating by viewModel.isEvaluating.collectAsState()
@@ -129,16 +128,15 @@ fun HomeScreen(
             item {
                 HeaderCard(
                     nickname = nickname,
-                    semester = semester,
-                    courageLevel = courageLevel
+                    semester = semester
                 )
             }
 
-            // Botão Principal do Oráculo
+            // Consulta do plano acadêmico para hoje
             item {
-                OracleButtonCard(
+                PlanButtonCard(
                     isEvaluating = isEvaluating,
-                    onConsultClick = { viewModel.consultOracle() },
+                    onConsultClick = { viewModel.evaluateToday() },
                     onRulesClick = { showHouseRulesDialog = true }
                 )
             }
@@ -338,15 +336,8 @@ fun HomeScreen(
 @Composable
 private fun HeaderCard(
     nickname: String,
-    semester: Int,
-    courageLevel: Float
+    semester: Int
 ) {
-    val modeName = when {
-        courageLevel <= 0.6f -> "Modo Nerdola 🤓"
-        courageLevel <= 0.8f -> "Estudante Médio 🎓"
-        else -> "Modo Vida Loka 💀"
-    }
-
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
@@ -392,25 +383,13 @@ private fun HeaderCard(
                         color = MaterialTheme.colorScheme.primary
                     )
                 }
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.15f)
-                ) {
-                    Text(
-                        text = modeName,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.secondary
-                    )
-                }
             }
         }
     }
 }
 
 @Composable
-private fun OracleButtonCard(
+private fun PlanButtonCard(
     isEvaluating: Boolean,
     onConsultClick: () -> Unit,
     onRulesClick: () -> Unit
@@ -431,7 +410,7 @@ private fun OracleButtonCard(
         ) {
             Box(modifier = Modifier.fillMaxWidth()) {
                 Text(
-                    text = "🔮 O ORÁCULO DA FALTA",
+                    text = "PLANEJE SEU DIA",
                     modifier = Modifier.align(Alignment.Center),
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Bold,

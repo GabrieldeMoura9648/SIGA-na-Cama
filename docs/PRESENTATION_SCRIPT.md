@@ -15,11 +15,11 @@
 ## 🚀 2. Onboarding, Navegação e DataStore (0:45 - 1:45)
 *(Mostre a tela de Onboarding ou Configurações no celular)*
 
-* **O que fazer na tela:** Mostre onde coloca o apelido, escolhe o semestre (ex: 4º semestre de DSM) e o perfil de aluno (ex: "No Limite" ou "Calculista"). Clique para ir para a Home.
+* **O que fazer na tela:** Mostre onde coloca o apelido e escolhe o semestre (ex: 4º semestre de DSM), com os subtítulos bem-humorados da lista. Clique para ir para a Home.
 * **O que falar (marcando 2 requisitos):**
   > "Logo de cara, cumprimos dois requisitos obrigatórios:
   > 1. **Navegação entre telas** (`AppNavHost.kt`): o app sabe sozinho se é a primeira vez do aluno e navega entre o Onboarding, a Home, a agenda de Eventos e as Configurações.
-  > 2. **DataStore** (`UserPreferencesRepository.kt`): o semestre que eu escolhi, meu apelido e meu nível de coragem para faltar ficam salvos no DataStore. Mesmo fechando o app, ele lembra exatamente quem eu sou."
+  > 2. **DataStore** (`UserPreferencesRepository.kt`): o semestre que eu escolhi e meu apelido ficam salvos no DataStore. Mesmo fechando o app, ele lembra exatamente quem eu sou."
 
 ---
 
@@ -37,12 +37,12 @@
 
 ---
 
-## 🔮 4. O Oráculo da Falta e as Regras Reais da Fatec (3:00 - 3:45)
-*(Aponte para o Card do Oráculo no topo da Home e clique no ícone de informação `ℹ️`)*
+## 4. Consulta diária e as Regras Reais da Fatec (3:00 - 3:45)
+*(Aponte para o card de planejamento no topo da Home e clique no ícone de informação `ℹ️`)*
 
 * **O que fazer na tela:** Mostre o veredito do dia e abra o modal de regras do SIGA.
 * **O que falar:**
-  > "Aqui no topo mora o **Oráculo**. Ele cruza os dados do SQLite com o regulamento real da Fatec: limite de 25% de faltas, aviso de que estourar falta bloqueia até o Exame Final, e alerta para matérias de Extensão. Se tiver prova cadastrada na aba de Eventos, o Oráculo fica vermelho na hora e proíbe a soneca!"
+  > "Aqui no topo está a consulta diária. Ela cruza os dados do SQLite com o regulamento real da Fatec: limite de 25% de faltas, aviso de que estourar falta bloqueia até o Exame Final, e alerta para matérias de Extensão. Se tiver prova cadastrada na aba de Eventos, o alerta fica vermelho na hora e recomenda não faltar!"
 
 ---
 
@@ -53,11 +53,12 @@
   1. Em **Alarme Matinal Real**, mostre os modos **Automático (Pela 1ª aula)** e **Manual (Fixo)**. No automático, escolha uma antecedência; no manual, configure um horário fixo.
   2. Explique que o modo automático consulta a primeira aula futura e pula feriados nacionais da BrasilAPI, além de 9 de julho (SP) e 8 de dezembro (Diadema). Carnaval, Corpus Christi e folgas institucionais continuam no calendário acadêmico.
   3. Em **Som Atual**, abra **Escolher Meme / Som da API**. Mostre a busca inicial temática e os chips de sons do MyInstants Brasil; pré-visualize um resultado e selecione-o para baixar e salvar no cache local.
-  4. Clique em **"Testar Notificação (5s)"** para mostrar a notificação padrão chegando no topo com o ícone da caminha.
-  5. Clique em **"Testar Alarme Real (5s)"** e bloqueie a tela do celular.
-  6. Quando o alarme tocar acendendo a tela (`AlarmRingingActivity.kt`), mostre a mensagem do Oráculo e aperte o botão mágico: **"🛌 Vou Faltar Hoje (+Falta)"**.
-  7. Volte para a Home e mostre que a falta foi registrada sozinha no banco!
+  4. Em **Preview na Noite Anterior**, mostre o horário padrão **21:00**, abra **Alterar horário do preview** e explique que a escolha é salva e reagendada.
+  5. Clique em **"Testar Preview de Amanhã (5s)"** para mostrar a notificação chegando no topo. Ela usa o título **"Agenda de Amanhã — SIGA na Cama"** e traz aulas, resumo acadêmico e estado do despertador.
+  6. Clique em **"Testar Alarme Real (5s)"** e bloqueie a tela do celular.
+  7. Quando o alarme tocar acendendo a tela (`AlarmRingingActivity.kt`), mostre o resumo acadêmico e aperte o botão: **"🛌 Vou Faltar Hoje (+Falta)"**.
+  8. Volte para a Home e mostre que a falta foi registrada sozinha no banco!
 * **O que falar (marcando o 5º requisito com chave de ouro):**
-  > "Para fechar o 5º requisito obrigatório de **Notificações Locais**, nós fomos além: temos o `WorkManager` (`DailyCheckWorker.kt`) que manda notificações diárias e um preview na noite anterior dizendo como será o dia seguinte.
+  > "Para fechar o 5º requisito obrigatório de **Notificações Locais**, nós fomos além: temos o `WorkManager` (`DailyCheckWorker.kt`) que manda notificações diárias e um preview na noite anterior, em um horário escolhido pelo aluno, dizendo como será o dia seguinte.
   > O **Despertador Inteligente** pode usar um horário manual ou calcular o toque pela primeira aula em um dia letivo futuro, descontando a antecedência escolhida. No modo automático, ele consulta os feriados nacionais na BrasilAPI e também considera datas estaduais e municipais de São Paulo e Diadema; datas específicas da Fatec permanecem no calendário acadêmico. Se não for possível validar o feriado, o alarme automático é cancelado por segurança. Também dá para buscar sons no MyInstants Brasil, ouvir uma prévia e manter o MP3 selecionado no cache privado para uso offline. Se o arquivo personalizado falhar, o app tenta o toque de alarme nativo do Android.
-  > Quando o alarme toca, você não precisa fazer conta de cabeça: se o Oráculo liberou o sono, aperta **'Vou Faltar Hoje'** direto no despertador; ele soma as faltas do dia automaticamente no SQLite. Muito obrigado!"
+  > Quando o alarme toca, você não precisa fazer conta de cabeça: confira o resumo da sua grade e aperte **'Vou Faltar Hoje'** direto no despertador; ele soma as faltas do dia automaticamente no SQLite. Muito obrigado!"

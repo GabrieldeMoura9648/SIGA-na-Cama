@@ -15,7 +15,7 @@ class OnboardingViewModel(
     private val repository: AcademicRepository
 ) : ViewModel() {
 
-    private val _currentStep = MutableStateFlow(1) // 1 = Apelido, 2 = Semestre, 3 = Coragem
+    private val _currentStep = MutableStateFlow(1)
     val currentStep: StateFlow<Int> = _currentStep.asStateFlow()
 
     private val _nickname = MutableStateFlow("")
@@ -23,9 +23,6 @@ class OnboardingViewModel(
 
     private val _selectedSemester = MutableStateFlow(1)
     val selectedSemester: StateFlow<Int> = _selectedSemester.asStateFlow()
-
-    private val _courageLevel = MutableStateFlow(0.75f) // 0.50f (Nerdola), 0.75f (Médio), 0.90f (Vida Loka)
-    val courageLevel: StateFlow<Float> = _courageLevel.asStateFlow()
 
     fun updateNickname(name: String) {
         _nickname.value = name
@@ -35,12 +32,8 @@ class OnboardingViewModel(
         _selectedSemester.value = sem
     }
 
-    fun selectCourageLevel(level: Float) {
-        _courageLevel.value = level
-    }
-
     fun nextStep() {
-        if (_currentStep.value < 3) {
+        if (_currentStep.value < 2) {
             _currentStep.value += 1
         }
     }
@@ -56,7 +49,6 @@ class OnboardingViewModel(
             val nameToSave = _nickname.value.ifBlank { "Guerreiro da Fatec" }
             preferencesRepository.setStudentNickname(nameToSave)
             preferencesRepository.setSelectedSemester(_selectedSemester.value)
-            preferencesRepository.setCourageLevel(_courageLevel.value)
             preferencesRepository.setOnboardingCompleted(true)
             
             // Dispara a sincronização de dados antes de ir para a Home
@@ -76,4 +68,3 @@ class OnboardingViewModel(
         }
     }
 }
-
