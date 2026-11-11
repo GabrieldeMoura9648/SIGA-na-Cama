@@ -63,12 +63,36 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlin.math.roundToInt
 
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.fatecskip.data.repository.ExternalSoundRepository
+import com.example.fatecskip.FatecSkipApp
+
+import androidx.compose.material3.ExperimentalMaterial3Api
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     viewModel: SettingsViewModel,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    
+    val externalSoundViewModel: ExternalSoundViewModel = viewModel(
+        factory = ExternalSoundViewModel.Factory(
+            ExternalSoundRepository(context.applicationContext),
+            (context.applicationContext as FatecSkipApp).preferencesRepository
+        )
+    )
+    val customAlarmName by externalSoundViewModel.selectedSoundName.collectAsState()
+    var showSoundDialog by remember { mutableStateOf(false) }
+
+    if (showSoundDialog) {
+        ExternalSoundDialog(
+            viewModel = externalSoundViewModel,
+            onDismiss = { showSoundDialog = false }
+        )
+    }
+
     val nickname by viewModel.studentNickname.collectAsState()
     val semester by viewModel.selectedSemester.collectAsState()
     val courageLevel by viewModel.courageLevel.collectAsState()
@@ -77,6 +101,8 @@ fun SettingsScreen(
     val alarmHour by viewModel.alarmHour.collectAsState()
     val alarmMinute by viewModel.alarmMinute.collectAsState()
     val nightPreviewEnabled by viewModel.nightPreviewEnabled.collectAsState()
+    val alarmMode by viewModel.alarmMode.collectAsState()
+    val alarmAutoOffsetMinutes by viewModel.alarmAutoOffsetMinutes.collectAsState()
     val apiUrl by viewModel.apiUrl.collectAsState()
     val isSyncing by viewModel.isSyncing.collectAsState()
     val feedbackMessage by viewModel.feedbackMessage.collectAsState()
@@ -392,24 +418,75 @@ fun SettingsScreen(
                                 onCheckedChange = { viewModel.updateAlarmEnabled(context, it) }
                             )
                         }
+                        
+                        if (alarmEnabled) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 8.dp)
+                            ) {
+                                Text("Modo do Despertador:", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    FilterChip(
+                                        selected = alarmMode == "auto",
+                                        onClick = { viewModel.updateAlarmMode(context, "auto") },
+                                        label = { Text("Automático (Pela 1ª aula)") },
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    FilterChip(
+                                        selected = alarmMode == "manual",
+                                        onClick = { viewModel.updateAlarmMode(context, "manual") },
+                                        label = { Text("Manual (Fixo)") },
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                }
 
-                        OutlinedButton(
-                            onClick = {
-                                TimePickerDialog(
-                                    context,
-                                    { _, hour, minute ->
-                                        viewModel.updateAlarmTime(context, hour, minute)
-                                    },
-                                    alarmHour,
-                                    alarmMinute,
-                                    true
-                                ).show()
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            enabled = alarmEnabled,
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Text("Horário do alarme: %02d:%02d".format(alarmHour, alarmMinute))
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                if (alarmMode == "auto") {
+                                    Text(
+                                        "O alarme tocará antes da sua primeira aula do dia seguinte.",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text("Antecedência:", style = MaterialTheme.typography.labelSmall)
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        listOf(45, 60, 90, 120).forEach { mins ->
+                                            FilterChip(
+                                                selected = alarmAutoOffsetMinutes == mins,
+                                                onClick = { viewModel.updateAlarmAutoOffset(context, mins) },
+                                                label = { Text("${mins}m") }
+                                            )
+                                        }
+                                    }
+                                } else {
+                                    OutlinedButton(
+                                        onClick = {
+                                            TimePickerDialog(
+                                                context,
+                                                { _, hour, minute ->
+                                                    viewModel.updateAlarmTime(context, hour, minute)
+                                                },
+                                                alarmHour,
+                                                alarmMinute,
+                                                true
+                                            ).show()
+                                        },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(12.dp)
+                                    ) {
+                                        Text("Horário do alarme fixo: %02d:%02d".format(alarmHour, alarmMinute))
+                                    }
+                                }
+                            }
                         }
 
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !canScheduleExactAlarms) {
@@ -450,6 +527,27 @@ fun SettingsScreen(
                             shape = RoundedCornerShape(12.dp)
                         ) {
                             Text("Testar Alarme Real (5s)")
+                        }
+
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp)) {
+                                Text(
+                                    "Som Atual: ${customAlarmName ?: "Som Padrão"}",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Button(
+                                    onClick = { showSoundDialog = true },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(10.dp)
+                                ) {
+                                    Text("🔍 Escolher Meme / Som da API")
+                                }
+                            }
                         }
 
                         Row(

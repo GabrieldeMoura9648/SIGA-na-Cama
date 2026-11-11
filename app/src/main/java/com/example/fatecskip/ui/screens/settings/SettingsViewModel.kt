@@ -45,6 +45,12 @@ class SettingsViewModel(
     val alarmMinute: StateFlow<Int> = preferencesRepository.alarmMinuteFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 30)
 
+    val alarmMode: StateFlow<String> = preferencesRepository.alarmModeFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "manual")
+
+    val alarmAutoOffsetMinutes: StateFlow<Int> = preferencesRepository.alarmAutoOffsetMinutesFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 60)
+
     val nightPreviewEnabled: StateFlow<Boolean> = preferencesRepository.nightPreviewEnabledFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
@@ -128,11 +134,7 @@ class SettingsViewModel(
         viewModelScope.launch {
             preferencesRepository.setAlarmEnabled(enabled)
             if (enabled) {
-                val exact = AlarmScheduler.scheduleDailyAlarm(
-                    context,
-                    preferencesRepository.alarmHourFlow.first(),
-                    preferencesRepository.alarmMinuteFlow.first()
-                )
+                val exact = AlarmScheduler.scheduleDailyAlarm(context)
                 _feedbackMessage.value = if (exact) {
                     "⏰ Despertador ativado com horário exato."
                 } else {
@@ -150,12 +152,28 @@ class SettingsViewModel(
             preferencesRepository.setAlarmHour(hour)
             preferencesRepository.setAlarmMinute(minute)
             if (alarmEnabled.value) {
-                val exact = AlarmScheduler.scheduleDailyAlarm(context, hour, minute)
-                _feedbackMessage.value = if (exact) {
-                    "Alarme diário atualizado para %02d:%02d.".format(hour, minute)
-                } else {
-                    "Alarme atualizado para %02d:%02d, mas sem precisão exata.".format(hour, minute)
-                }
+                AlarmScheduler.scheduleDailyAlarm(context)
+                _feedbackMessage.value = "⏰ Horário do alarme atualizado."
+            }
+        }
+    }
+
+    fun updateAlarmMode(context: Context, mode: String) {
+        viewModelScope.launch {
+            preferencesRepository.setAlarmMode(mode)
+            if (alarmEnabled.value) {
+                AlarmScheduler.scheduleDailyAlarm(context)
+                _feedbackMessage.value = "⏰ Modo do alarme atualizado."
+            }
+        }
+    }
+
+    fun updateAlarmAutoOffset(context: Context, offsetMinutes: Int) {
+        viewModelScope.launch {
+            preferencesRepository.setAlarmAutoOffsetMinutes(offsetMinutes)
+            if (alarmEnabled.value) {
+                AlarmScheduler.scheduleDailyAlarm(context)
+                _feedbackMessage.value = "⏰ Antecedência atualizada."
             }
         }
     }
@@ -200,11 +218,7 @@ class SettingsViewModel(
     fun refreshAlarmSchedule(context: Context) {
         viewModelScope.launch {
             if (alarmEnabled.value) {
-                val exact = AlarmScheduler.scheduleDailyAlarm(
-                    context,
-                    alarmHour.value,
-                    alarmMinute.value
-                )
+                val exact = AlarmScheduler.scheduleDailyAlarm(context)
                 _feedbackMessage.value = if (exact) {
                     "Permissão concedida. Despertador exato ativado."
                 } else {
