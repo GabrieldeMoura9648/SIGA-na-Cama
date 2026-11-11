@@ -20,7 +20,7 @@ Conciliar horários, provas e frequência pode gerar ansiedade e decisões basea
 - **Eventos:** agenda de eventos e datas cadastradas.
 - **Matéria Extra:** seleção de semestre e catálogo por dropdown, além de cadastro manual.
 - **Configurações:** semestre, margem de alerta, notificações, horário do alarme, preview noturno e sincronização.
-- **Despertador inteligente:** modo manual com horário fixo ou modo automático calculado a partir da primeira aula na próxima data de alarme, com antecedência configurável; inclui alarme em tela cheia, soneca de 10 minutos, dispensar e registro das faltas das disciplinas com aula hoje.
+- **Despertador inteligente:** modo manual com horário fixo ou modo automático calculado a partir da primeira aula em um dia letivo futuro, com antecedência configurável. No automático, ignora feriados nacionais consultados na BrasilAPI e feriados estaduais/municipais cadastrados para São Paulo e Diadema; inclui alarme em tela cheia, soneca de 10 minutos, dispensar e registro das faltas das disciplinas com aula hoje.
 - **Sons personalizados:** busca de sons do MyInstants Brasil com Safe Search acadêmico, prévia em streaming e download para cache privado offline; se o áudio personalizado falhar, o alarme tenta tocar o ringtone nativo do Android.
 - **Preview noturno:** notificação de resumo do veredito para o dia seguinte.
 
@@ -30,10 +30,11 @@ Conciliar horários, provas e frequência pode gerar ansiedade e decisões basea
 - ✅ **Preferências assíncronas:** DataStore para apelido, semestre, nível de coragem, URL da API, notificações, onboarding e configuração do alarme.
 - ✅ **Persistência local:** Room sobre SQLite para disciplinas, eventos, desculpas e edições personalizadas.
 - ✅ **API REST:** Retrofit/Gson para sincronizar o catálogo JSON; em caso de falha, o repositório repõe os dados locais de `DefaultFatecData`.
+- ✅ **Consulta de feriados:** Retrofit/Gson consulta a BrasilAPI por ano; o modo automático também reconhece 9 de julho (São Paulo) e 8 de dezembro (Diadema). A consulta é assíncrona e os resultados nacionais são mantidos em memória durante a execução.
 - ✅ **Sons externos e conectividade:** OkHttp consulta diretamente o MyInstants Brasil; o parser HTML usa UTF-8 e blacklist local. O áudio selecionado é armazenado em cache privado para reprodução offline.
 - ✅ **Notificações e alarmes:** WorkManager para tarefas periódicas/adiáveis; AlarmManager para alarme diário, soneca e preview, com fallback inexato quando o sistema não autoriza alarme exato.
 
-**Nota sobre o JSON offline:** `app/src/main/assets/fatec_api.json` e `fatec_api.json` são arquivos JSON do projeto, mas o fallback executado em runtime atualmente usa `DefaultFatecData`; o repositório não lê o asset JSON como fallback. A disponibilidade do alarme exato também depende da versão do Android e da permissão concedida pelo usuário.
+**Nota sobre os dados acadêmicos:** `fatec_api.json` é a fonte configurada para sincronização da grade e do calendário acadêmico; o fallback de catálogo executado em runtime usa `DefaultFatecData`, não o asset JSON. Os feriados nacionais fixos foram removidos do JSON por serem consultados à BrasilAPI. Permanecem no calendário acadêmico Carnaval, Sexta-feira Santa, Corpus Christi e datas institucionais como a folga do Dia do Professor e o Dia do Servidor Público. Se a consulta de feriados nacionais falhar, o modo automático cancela o alarme diário por segurança; o modo manual não depende dessa consulta. A disponibilidade do alarme exato também depende da versão do Android e da permissão concedida pelo usuário.
 
 ## Tecnologias
 
@@ -44,12 +45,12 @@ Conciliar horários, provas e frequência pode gerar ansiedade e decisões basea
 | Navigation Compose | Navegação entre telas |
 | Room / SQLite | Persistência local |
 | DataStore Preferences | Preferências reativas do usuário |
-| Retrofit e Gson | Consumo e desserialização da API REST |
+| Retrofit e Gson | Consumo das APIs acadêmica e de feriados |
 | OkHttp | Requisições diretas ao MyInstants e download do áudio personalizado |
 | WorkManager | Notificações e tarefas adiáveis |
 | AlarmManager | Disparos de relógio para alarme e preview |
 
-O fluxo MVVM dos sons, conectividade, Safe Search, cache offline e fallback estão documentados em [`docs/CODE_ARCHITECTURE.md`](docs/CODE_ARCHITECTURE.md), [`docs/API.md`](docs/API.md) e [`docs/OFFLINE_FIRST.md`](docs/OFFLINE_FIRST.md).
+Os fluxos de APIs, feriados, agendamento inteligente, sons, cache offline e fallback estão documentados em [`docs/CODE_ARCHITECTURE.md`](docs/CODE_ARCHITECTURE.md), [`docs/API.md`](docs/API.md) e [`docs/OFFLINE_FIRST.md`](docs/OFFLINE_FIRST.md).
 
 O projeto usa Gradle Kotlin DSL, Version Catalog e um único módulo Android, `:app`. A configuração declara `minSdk 26`, `compileSdk 36` e `targetSdk 36`.
 
@@ -57,11 +58,11 @@ O projeto usa Gradle Kotlin DSL, Version Catalog e um único módulo Android, `:
 
 - O Oráculo compara as aulas previstas para o dia com o limite de faltas salvo na disciplina.
 - Ao registrar uma falta pelo card ou pelo despertador, o app soma o bloco de aulas do encontro (`classesPerDay`); ajustes finos podem ser feitos no diálogo de edição.
-- O veredito considera feriados/domingos e dias sem aula, eventos críticos, limite absoluto e margem de segurança escolhida.
+- O veredito considera feriados/domingos e dias sem aula, eventos críticos, limite absoluto e margem de segurança escolhida. O agendamento automático pula feriados nacionais consultados na BrasilAPI e os feriados fixos de São Paulo e Diadema.
 - O app alerta sobre a perda do Exame Final quando reprovação por frequência é prevista e diferencia a mensagem para disciplinas extensionistas.
 - As informações sobre atestados e Regime Domiciliar são orientativas e devem ser confirmadas com os canais oficiais da Fatec.
 
-Veja a referência completa em [`docs/REGRAS_E_ROADMAP.md`](docs/REGRAS_E_ROADMAP.md).
+Veja a arquitetura e o fluxo de agendamento em [`docs/CODE_ARCHITECTURE.md`](docs/CODE_ARCHITECTURE.md) e a integração de APIs em [`docs/API.md`](docs/API.md).
 
 ## Como Rodar / Instalação
 

@@ -36,14 +36,15 @@ Este guia foi feito para explicar o código para o professor sem enrolação. Em
 
 ---
 
-### 4. API REST (Consumo de Serviço Externo com Retrofit)
-* **A ideia simples:** O app busca na nuvem (GitHub Raw JSON) a grade oficial de DSM da Fatec, feriados e lista de desculpas.
+### 4. APIs REST (Consumo de Serviços Externos com Retrofit)
+* **A ideia simples:** O app busca na nuvem (GitHub Raw JSON) a grade acadêmica, eventos do calendário institucional e lista de desculpas. Uma integração separada consulta os feriados nacionais na BrasilAPI.
 * **Auto-Sync + Smart Merge:** Ao abrir o app (dentro do `HomeViewModel.init`), o Retrofit bate na nuvem em *background*. Ele funde (merge) as novidades (como troca de professores ou horários divididos na semana) para o SQLite, mas respeita a flag `isCustomized` limpando apenas matérias que foram mescladas ou deixaram de existir no catálogo da Fatec. Tudo automático sem o usuário precisar clicar num botão de atualizar.
 * **O toque de mestre (Offline-First):** E se a internet da Fatec cair na hora da apresentação? O `AcademicRepository` tenta buscar na API via `Retrofit`; se falhar, ele lê instantaneamente a grade oficial salva em memória via `DefaultFatecData`. O app nunca quebra!
 * **Onde abrir para mostrar ao professor:**
-  * Interface HTTP: acesse na pasta `app/src/main/java/com/example/fatecskip/data/remote/FatecApiService.kt`
-  * Lógica de Sincronização: acesse na pasta `app/src/main/java/com/example/fatecskip/data/repository/AcademicRepository.kt`
-  * JSON local de segurança: acesse na pasta `app/src/main/assets/fatec_api.json`
+  * Interface acadêmica: acesse `app/src/main/java/com/example/fatecskip/data/remote/FatecApiService.kt`
+  * Consulta de feriados: acesse `app/src/main/java/com/example/fatecskip/data/remote/HolidayApiService.kt` e `app/src/main/java/com/example/fatecskip/data/repository/HolidayRepository.kt`
+  * Sincronização acadêmica: acesse `app/src/main/java/com/example/fatecskip/data/repository/AcademicRepository.kt`
+  * JSON da grade e calendário institucional: `fatec_api.json` (o asset local não é o fallback automático em runtime)
 
 ---
 
@@ -76,8 +77,10 @@ Detalhes das URLs, parser e blacklist estão em [`API.md`](API.md); o ciclo de c
 `AlarmScheduler.scheduleDailyAlarm()` consulta o modo e as preferências no DataStore e agenda o próximo alarme com `AlarmManager`:
 
 * **Manual (Fixo):** usa a hora e o minuto configurados pelo aluno.
-* **Automático:** obtém o semestre selecionado e consulta as disciplinas por meio do `AcademicRepository`. Procura o próximo horário de aula hoje ou amanhã, seleciona o início mais cedo e subtrai o `alarmAutoOffsetMinutes` configurado. O padrão do offset é 60 minutos.
-* **Sem aula futura hoje ou amanhã:** o comportamento atual mantém o horário fixo configurado como fallback; o scheduler não avança repetidamente até encontrar um próximo dia com aula.
+* **Automático:** obtém o semestre selecionado e consulta as disciplinas por meio do `AcademicRepository`. Procura o próximo horário em um dia futuro com aula, escolhe o início mais cedo e subtrai o `alarmAutoOffsetMinutes` configurado. O padrão do offset é 60 minutos.
+* **Feriados:** antes de agendar, consulta `HolidayRepository`, que combina feriados nacionais da BrasilAPI com 9 de julho (São Paulo) e 8 de dezembro (Diadema). Datas reconhecidas como feriado são puladas. Os feriados e folgas próprios do calendário Fatec, como Carnaval e Dia do Professor, permanecem no calendário acadêmico sincronizado; eles são usados na agenda e nas notificações do `DailyCheckWorker`.
+* **Falha na consulta:** se a BrasilAPI não puder validar um candidato, o scheduler cancela o alarme diário automático e registra o erro, em vez de agendar uma data sem validação. O modo manual permanece independente do serviço.
+* **Sem aula futura:** após procurar até 366 dias, se nenhuma data letiva puder ser agendada, o alarme diário automático é cancelado.
 * **Precisão:** usa `setExactAndAllowWhileIdle` quando permitido pelo Android e recorre a `setAndAllowWhileIdle` quando a permissão de alarme exato não está disponível.
 
 ---
@@ -85,8 +88,8 @@ Detalhes das URLs, parser e blacklist estão em [`API.md`](API.md); o ciclo de c
 ## 🗂️ Resumo Rápido das Pastas (Caso peçam um tour pelo código)
 * `data/local`: Tudo de SQLite/Room (`AppDatabase`, `DAOs` e `Entities`).
 * `data/preferences`: Tudo de DataStore (`UserPreferencesRepository`).
-* `data/remote`: A API REST acadêmica (`FatecApiService` e DTOs) e o cliente HTTP do MyInstants (`MyInstantsApiService`).
-* `data/repository`: Repositórios acadêmicos e de sons externos, que conectam fontes remotas, persistência local e regras de domínio.
+* `data/remote`: APIs REST acadêmica (`FatecApiService`) e de feriados (`HolidayApiService`), seus DTOs e o cliente HTTP do MyInstants (`MyInstantsApiService`).
+* `data/repository`: Repositórios acadêmicos, de feriados e de sons externos, que conectam fontes remotas, persistência local e regras de domínio.
 * `domain/model`: Onde vive o veredito do Oráculo (`SkipVerdict.kt`).
 * `ui/screens`: Todas as telas feitas em Jetpack Compose (`home`, `events`, `onboarding`, `settings`, `alarm`).
 * `worker`: Tudo de Notificações e Alarme em segundo plano.

@@ -32,7 +32,7 @@
   3. Clique no ícone de **Lápis** (`EditSubjectDialog.kt`) e apague uma matéria com o botão **Retirar da Grade**.
   4. Vá em **+ Matéria Extra**, tente adicionar uma DP no mesmo horário de outra aula. Mostre o aviso de *"Conflito de horário"* substituindo a matéria na grade!
 * **O que falar (marcando +2 requisitos):**
-  > "Mas de onde vieram todas essas matérias de DSM? Da nossa **API REST** (`FatecApiService.kt`)! Quando abrimos o app, ele faz um *Auto-Sync*: o Retrofit baixa a grade da nuvem e faz um *Smart Merge* para o nosso banco local de forma 100% transparente.
+  > "Mas de onde vieram todas essas matérias de DSM? Da nossa **API REST** (`FatecApiService.kt`)! Quando abrimos o app, ele faz um *Auto-Sync*: o Retrofit baixa a grade e o calendário acadêmico da nuvem e faz um *Smart Merge* para o nosso banco local de forma 100% transparente.
   > Salvamos isso no nosso **SQLite via Room Database** (`AppDatabase.kt`). O mais legal é o nosso **Gerenciador de Conflitos**: se eu puxar uma matéria de DP e ela cair exatamente no mesmo dia e horário da minha grade normal, o banco intercepta a intersecção de dias e já avisa na tela, permitindo substituir uma pela outra para a grade não bugar, respeitando as regras do SIGA!"
 
 ---
@@ -51,12 +51,13 @@
 
 * **O que fazer na tela:**
   1. Em **Alarme Matinal Real**, mostre os modos **Automático (Pela 1ª aula)** e **Manual (Fixo)**. No automático, escolha uma antecedência; no manual, configure um horário fixo.
-  2. Em **Som Atual**, abra **Escolher Meme / Som da API**. Mostre a busca inicial temática e os chips de sons do MyInstants Brasil; pré-visualize um resultado e selecione-o para baixar e salvar no cache local.
-  3. Clique em **"Testar Notificação (5s)"** para mostrar a notificação padrão chegando no topo com o ícone da caminha.
-  4. Clique em **"Testar Alarme Real (5s)"** e bloqueie a tela do celular.
-  5. Quando o alarme tocar acendendo a tela (`AlarmRingingActivity.kt`), mostre a mensagem do Oráculo e aperte o botão mágico: **"🛌 Vou Faltar Hoje (+Falta)"**.
-  6. Volte para a Home e mostre que a falta foi registrada sozinha no banco!
+  2. Explique que o modo automático consulta a primeira aula futura e pula feriados nacionais da BrasilAPI, além de 9 de julho (SP) e 8 de dezembro (Diadema). Carnaval, Corpus Christi e folgas institucionais continuam no calendário acadêmico.
+  3. Em **Som Atual**, abra **Escolher Meme / Som da API**. Mostre a busca inicial temática e os chips de sons do MyInstants Brasil; pré-visualize um resultado e selecione-o para baixar e salvar no cache local.
+  4. Clique em **"Testar Notificação (5s)"** para mostrar a notificação padrão chegando no topo com o ícone da caminha.
+  5. Clique em **"Testar Alarme Real (5s)"** e bloqueie a tela do celular.
+  6. Quando o alarme tocar acendendo a tela (`AlarmRingingActivity.kt`), mostre a mensagem do Oráculo e aperte o botão mágico: **"🛌 Vou Faltar Hoje (+Falta)"**.
+  7. Volte para a Home e mostre que a falta foi registrada sozinha no banco!
 * **O que falar (marcando o 5º requisito com chave de ouro):**
   > "Para fechar o 5º requisito obrigatório de **Notificações Locais**, nós fomos além: temos o `WorkManager` (`DailyCheckWorker.kt`) que manda notificações diárias e um preview na noite anterior dizendo como será o dia seguinte.
-  > O **Despertador Inteligente** pode usar um horário manual ou calcular o toque pela primeira aula na próxima data de alarme, descontando a antecedência escolhida. Também dá para buscar sons no MyInstants Brasil, ouvir uma prévia e manter o MP3 selecionado no cache privado para uso offline. Se o arquivo personalizado falhar, o app tenta o toque de alarme nativo do Android.
+  > O **Despertador Inteligente** pode usar um horário manual ou calcular o toque pela primeira aula em um dia letivo futuro, descontando a antecedência escolhida. No modo automático, ele consulta os feriados nacionais na BrasilAPI e também considera datas estaduais e municipais de São Paulo e Diadema; datas específicas da Fatec permanecem no calendário acadêmico. Se não for possível validar o feriado, o alarme automático é cancelado por segurança. Também dá para buscar sons no MyInstants Brasil, ouvir uma prévia e manter o MP3 selecionado no cache privado para uso offline. Se o arquivo personalizado falhar, o app tenta o toque de alarme nativo do Android.
   > Quando o alarme toca, você não precisa fazer conta de cabeça: se o Oráculo liberou o sono, aperta **'Vou Faltar Hoje'** direto no despertador; ele soma as faltas do dia automaticamente no SQLite. Muito obrigado!"
