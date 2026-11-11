@@ -24,11 +24,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.fatecskip.data.local.entities.SubjectEntity
 
+import androidx.compose.material3.ButtonDefaults
+
 @Composable
 fun EditSubjectDialog(
     subject: SubjectEntity,
     onDismiss: () -> Unit,
-    onSave: (id: Long, professor: String, classTime: String, daysOfWeek: String, absences: Int) -> Unit
+    onSave: (id: Long, professor: String, classTime: String, daysOfWeek: String, absences: Int) -> Unit,
+    onDeleteSubject: (Long) -> Unit = {}
 ) {
     var professor by remember { mutableStateOf(if (subject.professor == "Docente não definido") "" else subject.professor) }
     var classTime by remember { mutableStateOf(subject.classTime) }
@@ -123,6 +126,21 @@ fun EditSubjectDialog(
                     OutlinedButton(
                         onClick = { if (absences < subject.maxAbsences + 10) absences++ }
                     ) { Text("+1") }
+                }
+
+                Button(
+                    onClick = {
+                        onDeleteSubject(subject.id)
+                        onDismiss()
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError
+                    ),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Text("🗑️ Retirar da Grade")
                 }
             }
         },

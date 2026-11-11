@@ -27,6 +27,7 @@ Este guia foi feito para explicar o código para o professor sem enrolação. Em
 
 ### 3. SQLite / Room Database (Persistência de Dados)
 * **A ideia simples:** É o "Caderno Oficial" onde ficam as tabelas pesadas e estruturadas: as matérias do semestre (`subjects`), os eventos/provas (`academic_events`) e as desculpas (`excuses`).
+* **Bloqueio de Conflito de Horário (Art. 26 - Acomodação de Horários):** Se o aluno puxar uma matéria atrasada (DP) ou adiantada de outro semestre, o banco verifica a intersecção de `daysOfWeek` e `classTime`. Havendo conflito, o app aplica a política de substituição (uma matéria sai para a outra entrar), garantindo que não existam aulas duplicadas no mesmo horário!
 * **O toque de mestre (diferencial):** Criamos a coluna `isCustomized`. Se o aluno editar o nome do professor ou adicionar faltas, quando a API sincronizar de novo, o banco protege a edição do aluno e não sobrescreve!
 * **Onde abrir para mostrar ao professor:**
   * Banco: acesse na pasta `app/src/main/java/com/example/fatecskip/data/local/AppDatabase.kt`
@@ -37,7 +38,8 @@ Este guia foi feito para explicar o código para o professor sem enrolação. Em
 
 ### 4. API REST (Consumo de Serviço Externo com Retrofit)
 * **A ideia simples:** O app busca na nuvem (GitHub Raw JSON) a grade oficial de DSM da Fatec, feriados e lista de desculpas.
-* **O toque de mestre (Offline-First):** E se a internet da Fatec cair na hora da apresentação? O `AcademicRepository` tenta buscar na API via `Retrofit`; se falhar, ele lê instantaneamente o arquivo local `fatec_api.json` na pasta `assets/`. O app nunca quebra!
+* **Auto-Sync + Smart Merge:** Ao abrir o app (dentro do `HomeViewModel.init`), o Retrofit bate na nuvem em *background*. Ele funde (merge) as novidades (como troca de professores ou horários divididos na semana) para o SQLite, mas respeita a flag `isCustomized` limpando apenas matérias que foram mescladas ou deixaram de existir no catálogo da Fatec. Tudo automático sem o usuário precisar clicar num botão de atualizar.
+* **O toque de mestre (Offline-First):** E se a internet da Fatec cair na hora da apresentação? O `AcademicRepository` tenta buscar na API via `Retrofit`; se falhar, ele lê instantaneamente a grade oficial salva em memória via `DefaultFatecData`. O app nunca quebra!
 * **Onde abrir para mostrar ao professor:**
   * Interface HTTP: acesse na pasta `app/src/main/java/com/example/fatecskip/data/remote/FatecApiService.kt`
   * Lógica de Sincronização: acesse na pasta `app/src/main/java/com/example/fatecskip/data/repository/AcademicRepository.kt`

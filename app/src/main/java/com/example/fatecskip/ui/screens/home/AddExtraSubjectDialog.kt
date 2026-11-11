@@ -28,12 +28,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
+import androidx.compose.runtime.collectAsState
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddExtraSubjectDialog(
     viewModel: HomeViewModel,
     onDismiss: () -> Unit
 ) {
+    val currentGrade by viewModel.subjects.collectAsState()
     var searchSemester by remember { mutableIntStateOf(1) }
 
     // Obter matérias disponíveis via HomeViewModel
@@ -42,6 +45,7 @@ fun AddExtraSubjectDialog(
     }
 
     var selectedSubjectCode by remember { mutableStateOf<String?>(null) }
+    var conflictWarning by remember { mutableStateOf<String?>(null) }
     var expanded by remember { mutableStateOf(false) }
 
     var codeInput by remember { mutableStateOf("") }
@@ -144,6 +148,21 @@ fun AddExtraSubjectDialog(
                                     is80Hours = sub.classesPerDay == 4
                                     isManual = false
                                     expanded = false
+
+                                    val targetDays = if (sub.daysOfWeek.isNotBlank()) {
+                                        sub.daysOfWeek.split(",").mapNotNull { it.trim().toIntOrNull() }
+                                    } else listOf(sub.dayOfWeek)
+                                    val conflicting = currentGrade.find { existing ->
+                                        val existingDays = if (existing.daysOfWeek.isNotBlank()) {
+                                            existing.daysOfWeek.split(",").mapNotNull { it.trim().toIntOrNull() }
+                                        } else listOf(existing.dayOfWeek)
+                                        val dayConflict = existingDays.intersect(targetDays.toSet()).isNotEmpty()
+                                        val timeConflict = existing.classTime.equals(sub.classTime, ignoreCase = true)
+                                        dayConflict && timeConflict
+                                    }
+                                    conflictWarning = if (conflicting != null) {
+                                        "⚠️ Conflito de horário com ${conflicting.name} (Substituirá na grade)"
+                                    } else null
                                 }
                             )
                         }
@@ -155,9 +174,20 @@ fun AddExtraSubjectDialog(
                                 nameInput = ""
                                 isManual = true
                                 expanded = false
+                                conflictWarning = null
                             }
                         )
                     }
+                }
+
+                conflictWarning?.let { warningMsg ->
+                    Text(
+                        text = warningMsg,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.fillMaxWidth()
+                    )
                 }
 
                 OutlinedTextField(

@@ -50,12 +50,9 @@ class HomeViewModel(
 
     init {
         viewModelScope.launch {
-            // Se a grade estiver vazia no banco, força a carga silenciosamente
             val sem = selectedSemester.value
-            val currentList = repository.getSubjectsForSemester(sem).first()
-            if (currentList.isEmpty()) {
-                repository.syncFromApi(sem)
-            }
+            // Auto-Sync Inteligente
+            repository.syncFromApi(sem)
         }
     }
 
@@ -131,7 +128,9 @@ class HomeViewModel(
                 name = subject.name,
                 targetSemester = selectedSemester.value, // Adiciona na grade atual do aluno
                 dayOfWeek = subject.dayOfWeek,
+                daysOfWeekStr = subject.daysOfWeek,
                 classesPerDay = subject.classesPerDay,
+                classTime = subject.classTime,
                 maxAbsences = subject.maxAbsences,
                 isExtension = subject.isExtension
             )
@@ -140,6 +139,16 @@ class HomeViewModel(
                 _userFeedback.value = "Matéria '${subject.name}' adicionada à sua grade!"
             } else {
                 _userFeedback.value = "Você já possui '${subject.name}' na sua grade."
+            }
+        }
+    }
+
+    fun removeSubject(subjectId: Long, subjectName: String) {
+        viewModelScope.launch {
+            repository.removeSubjectFromGrade(subjectId)
+            _userFeedback.value = "Matéria '$subjectName' retirada da sua grade."
+            if (_verdict.value != null) {
+                consultOracle()
             }
         }
     }

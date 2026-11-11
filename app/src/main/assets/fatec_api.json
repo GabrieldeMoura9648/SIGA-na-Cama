@@ -78,58 +78,50 @@
     "1": [
       {
         "code": "DWI01",
-        "name": "Desenv. Web I (Hélio Cesar)",
-        "dayOfWeek": 1,
+        "name": "Desenvolvimento Web I (Hélio Cesar)",
+        "dayOfWeek": "Segunda, Terça",
+        "schedule": "07:40 - 09:20",
         "classesPerDay": 2,
         "maxAbsences": 20
       },
       {
         "code": "ALG01",
-        "name": "Algoritmos (Lúcio)",
-        "dayOfWeek": 1,
-        "classesPerDay": 2,
-        "maxAbsences": 20
-      },
-      {
-        "code": "DWI02",
-        "name": "Desenv. Web I (Hélio Cesar)",
-        "dayOfWeek": 2,
+        "name": "Algoritmos e Lógica de Programação (Lúcio)",
+        "dayOfWeek": "Segunda, Quarta",
+        "schedule": "Seg 09:40-11:20 / Qua 11:20-13:00",
         "classesPerDay": 2,
         "maxAbsences": 20
       },
       {
         "code": "MBD01",
-        "name": "Model. de Banco (Sueli Ap)",
-        "dayOfWeek": 2,
+        "name": "Modelagem de Banco de Dados (Sueli Ap.)",
+        "dayOfWeek": "Terça",
+        "schedule": "09:40 - 13:00",
         "classesPerDay": 4,
         "maxAbsences": 20
       },
       {
         "code": "SOP01",
-        "name": "Sistema Op (Silas / Ismael)",
-        "dayOfWeek": 3,
+        "name": "Sistemas Operacionais e Redes de Comp. (Silas / Ismael)",
+        "dayOfWeek": "Quarta",
+        "schedule": "07:40 - 11:20",
         "classesPerDay": 4,
         "maxAbsences": 20
       },
       {
-        "code": "ALG02",
-        "name": "Algoritmos (Lúcio)",
-        "dayOfWeek": 3,
-        "classesPerDay": 2,
-        "maxAbsences": 20
-      },
-      {
         "code": "ES101",
-        "name": "Eng. Software I (Rháleff)",
-        "dayOfWeek": 4,
+        "name": "Engenharia de Software I (Rháleff)",
+        "dayOfWeek": "Quinta",
+        "schedule": "09:40 - 13:00",
         "classesPerDay": 4,
         "maxAbsences": 20,
         "isExtension": true
       },
       {
         "code": "DDG01",
-        "name": "Design Digital (Patricia)",
-        "dayOfWeek": 5,
+        "name": "Design Digital (Patrícia)",
+        "dayOfWeek": "Sexta",
+        "schedule": "09:40 - 13:00",
         "classesPerDay": 4,
         "maxAbsences": 20
       }
@@ -137,51 +129,50 @@
     "2": [
       {
         "code": "ES201",
-        "name": "Eng Software II (Luiz Antonio / Marco A)",
-        "dayOfWeek": 1,
+        "name": "Engenharia de Software II (Luiz Antonio / Marco A.)",
+        "dayOfWeek": "Segunda",
+        "schedule": "07:40 - 11:20",
         "classesPerDay": 4,
         "maxAbsences": 20,
         "isExtension": true
       },
       {
         "code": "EDD01",
-        "name": "Estrutura Dados (Lucio)",
-        "dayOfWeek": 1,
+        "name": "Estrutura de Dados (Lúcio)",
+        "dayOfWeek": "Segunda, Quarta",
+        "schedule": "Seg 11:20-13:00 / Qua 07:40-09:20",
         "classesPerDay": 2,
         "maxAbsences": 20
       },
       {
         "code": "DW201",
-        "name": "Desenv. Web II (Bruno)",
-        "dayOfWeek": 2,
+        "name": "Desenvolvimento Web II (Bruno)",
+        "dayOfWeek": "Terça",
+        "schedule": "09:40 - 13:00",
         "classesPerDay": 4,
         "maxAbsences": 20
       },
       {
-        "code": "EDD02",
-        "name": "Estrutura Dados (Lucio)",
-        "dayOfWeek": 3,
-        "classesPerDay": 2,
-        "maxAbsences": 20
-      },
-      {
         "code": "MPC01",
-        "name": "Mat para Comp (Rosângela)",
-        "dayOfWeek": 3,
+        "name": "Matemática para Computação (Rosângela)",
+        "dayOfWeek": "Quarta",
+        "schedule": "09:40 - 13:00",
         "classesPerDay": 4,
         "maxAbsences": 20
       },
       {
         "code": "TPI01",
-        "name": "Téc Prog I (Marcos Vasconcelos)",
-        "dayOfWeek": 4,
+        "name": "Técnicas de Programação I (Marcos Vasconcelos)",
+        "dayOfWeek": "Quinta",
+        "schedule": "07:40 - 11:20",
         "classesPerDay": 4,
         "maxAbsences": 20
       },
       {
         "code": "BDR01",
-        "name": "Banco Dados Rel. (Rafael Miranda / Renan)",
-        "dayOfWeek": 5,
+        "name": "Banco de Dados Relacional (Rafael Miranda / Renan)",
+        "dayOfWeek": "Sexta",
+        "schedule": "09:40 - 13:00",
         "classesPerDay": 4,
         "maxAbsences": 20
       }
@@ -189,51 +180,58 @@
     "3": [
       {
         "code": "IHC01",
-        "name": "Int. H. Computador (Lucio)",
-        "dayOfWeek": 1,
+        "name": "Interação Humano Computador (Lúcio)",
+        "dayOfWeek": "Segunda",
+        "schedule": "07:40 - 09:20",
         "classesPerDay": 2,
         "maxAbsences": 10
       },
       {
         "code": "GAG01",
-        "name": "Gestão Ágil (Bruno)",
-        "dayOfWeek": 1,
+        "name": "Gestão Ágil de Projetos de Software (Bruno)",
+        "dayOfWeek": "Segunda",
+        "schedule": "09:40 - 13:00",
         "classesPerDay": 4,
         "maxAbsences": 20,
         "isExtension": true
       },
       {
         "code": "BDN01",
-        "name": "Ban. Dados N Rel. (Floriano)",
-        "dayOfWeek": 2,
+        "name": "Banco de Dados Não Relacional (Marcos Vasconcelos)",
+        "dayOfWeek": "Terça",
+        "schedule": "07:40 - 11:20",
         "classesPerDay": 4,
         "maxAbsences": 20
       },
       {
         "code": "DW301",
-        "name": "Desenv. Web III (Vinicius Heltai)",
-        "dayOfWeek": 3,
+        "name": "Desenvolvimento Web III (Vinicius Heltai)",
+        "dayOfWeek": "Quarta",
+        "schedule": "07:40 - 11:20",
         "classesPerDay": 4,
         "maxAbsences": 20
       },
       {
         "code": "ALG03",
         "name": "Álgebra Linear (Rosângela)",
-        "dayOfWeek": 4,
+        "dayOfWeek": "Quinta",
+        "schedule": "09:40 - 13:00",
         "classesPerDay": 4,
         "maxAbsences": 20
       },
       {
         "code": "ING01",
         "name": "Inglês I (Luciano / Valteir)",
-        "dayOfWeek": 5,
+        "dayOfWeek": "Sexta",
+        "schedule": "07:40 - 09:20",
         "classesPerDay": 2,
         "maxAbsences": 10
       },
       {
         "code": "TP201",
-        "name": "Téc Prog II (Vinicius)",
-        "dayOfWeek": 5,
+        "name": "Técnicas de Programação II (Vinicius)",
+        "dayOfWeek": "Sexta",
+        "schedule": "09:40 - 13:00",
         "classesPerDay": 4,
         "maxAbsences": 20
       }
@@ -241,58 +239,58 @@
     "4": [
       {
         "code": "IOT01",
-        "name": "Internet Coisas (Rháleff)",
-        "dayOfWeek": 1,
+        "name": "Internet das Coisas e Aplicações (Rháleff / Ismael)",
+        "dayOfWeek": "Segunda",
+        "schedule": "09:40 - 13:00",
         "classesPerDay": 4,
         "maxAbsences": 20
       },
       {
         "code": "LDW01",
-        "name": "Lab. Des. Web (Edson)",
-        "dayOfWeek": 2,
+        "name": "Laboratório de Desenv. Web (Edson)",
+        "dayOfWeek": "Terça",
+        "schedule": "07:40 - 11:20",
         "classesPerDay": 4,
         "maxAbsences": 20,
         "isExtension": true
       },
       {
         "code": "PDM01",
-        "name": "Prog. Disp Móveis I (Rafael Lopes)",
-        "dayOfWeek": 2,
+        "name": "Programação para Disp. Móveis I (Marcos Vasconcelos)",
+        "dayOfWeek": "Terça, Quinta",
+        "schedule": "11:20 - 13:00",
         "classesPerDay": 2,
         "maxAbsences": 20
       },
       {
         "code": "IEC01",
-        "name": "Int. Entrega Contínua (Rafael Lopes)",
-        "dayOfWeek": 3,
+        "name": "Integração e Entrega Contínua (Rafael Lopes)",
+        "dayOfWeek": "Quarta",
+        "schedule": "07:40 - 11:20",
         "classesPerDay": 4,
         "maxAbsences": 20
       },
       {
         "code": "EST01",
-        "name": "Estat. Aplicada (Diogo Soares)",
-        "dayOfWeek": 4,
+        "name": "Estatística Aplicada (Diogo Soares)",
+        "dayOfWeek": "Quinta",
+        "schedule": "07:40 - 11:20",
         "classesPerDay": 4,
-        "maxAbsences": 20
-      },
-      {
-        "code": "PDM02",
-        "name": "Prog. Disp Móveis I (Rafael lopes)",
-        "dayOfWeek": 4,
-        "classesPerDay": 2,
         "maxAbsences": 20
       },
       {
         "code": "ING02",
         "name": "Inglês II (Luciano / Valteir)",
-        "dayOfWeek": 5,
+        "dayOfWeek": "Sexta",
+        "schedule": "09:40 - 11:20",
         "classesPerDay": 2,
         "maxAbsences": 10
       },
       {
         "code": "UX001",
-        "name": "Experiência Usuário (Carlo Ronny)",
-        "dayOfWeek": 5,
+        "name": "Experiência do Usuário (Carlo Ronny)",
+        "dayOfWeek": "Sexta",
+        "schedule": "11:20 - 13:00",
         "classesPerDay": 2,
         "maxAbsences": 10
       }
@@ -300,58 +298,58 @@
     "5": [
       {
         "code": "FRT01",
-        "name": "F. Redação técnica (Thierri)",
-        "dayOfWeek": 1,
+        "name": "Fundamentos da Redação Técnica (Thierri)",
+        "dayOfWeek": "Segunda",
+        "schedule": "07:40 - 09:20",
         "classesPerDay": 2,
         "maxAbsences": 10
       },
       {
         "code": "ING03",
         "name": "Inglês III (Amaury)",
-        "dayOfWeek": 1,
+        "dayOfWeek": "Segunda",
+        "schedule": "09:40 - 11:20",
         "classesPerDay": 2,
         "maxAbsences": 10
       },
       {
         "code": "CPN01",
-        "name": "Comp. Nuvem I (Odair / Renan)",
-        "dayOfWeek": 2,
+        "name": "Computação em Nuvem I (Odair / Renan)",
+        "dayOfWeek": "Terça",
+        "schedule": "07:40 - 11:20",
         "classesPerDay": 4,
         "maxAbsences": 20
       },
       {
         "code": "LDM01",
-        "name": "Lab. de Des. p/ Disp. Móveis (Carlo Ronny)",
-        "dayOfWeek": 3,
+        "name": "Lab. de Desenv. p/ Disp. Móveis (Carlo Ronny)",
+        "dayOfWeek": "Quarta",
+        "schedule": "07:40 - 11:20",
         "classesPerDay": 4,
         "maxAbsences": 20,
         "isExtension": true
       },
       {
         "code": "PDM03",
-        "name": "Prog. Disp. Móv. II (Vinicius)",
-        "dayOfWeek": 3,
+        "name": "Programação para Disp. Móveis II (Vinicius)",
+        "dayOfWeek": "Quarta, Sexta",
+        "schedule": "Qua 11:20-13:00 / Sex 07:40-09:20",
         "classesPerDay": 2,
         "maxAbsences": 20
       },
       {
         "code": "SDA01",
-        "name": "Seg. D. Aplicações (Evandro / Ismael)",
-        "dayOfWeek": 4,
+        "name": "Segurança no Desenv. de Aplicações (Evandro / Ismael)",
+        "dayOfWeek": "Quinta",
+        "schedule": "07:40 - 11:20",
         "classesPerDay": 4,
         "maxAbsences": 20
       },
       {
-        "code": "PDM04",
-        "name": "Prog. Disp. Móv. II (Vinicius)",
-        "dayOfWeek": 5,
-        "classesPerDay": 2,
-        "maxAbsences": 20
-      },
-      {
         "code": "APM01",
-        "name": "Aprendiz. Máquina (Rháleff / Marcelo)",
-        "dayOfWeek": 5,
+        "name": "Aprendizagem de Máquina (Rháleff / Marcelo)",
+        "dayOfWeek": "Sexta",
+        "schedule": "09:40 - 13:00",
         "classesPerDay": 4,
         "maxAbsences": 20
       }
@@ -359,58 +357,58 @@
     "6": [
       {
         "code": "LDM02",
-        "name": "Lab. Desenv. Multip. (Rafael Guem / Renan)",
-        "dayOfWeek": 1,
+        "name": "Lab. de Desenv. Multiplataforma (Rafael Guem / Renan)",
+        "dayOfWeek": "Segunda",
+        "schedule": "07:40 - 11:20",
         "classesPerDay": 4,
         "maxAbsences": 20,
         "isExtension": true
       },
       {
         "code": "ETC01",
-        "name": "Ética (Janaina)",
-        "dayOfWeek": 2,
+        "name": "Ética Profissional e Patente (Janaina)",
+        "dayOfWeek": "Terça",
+        "schedule": "09:40 - 11:20",
         "classesPerDay": 2,
         "maxAbsences": 10
       },
       {
         "code": "MND01",
         "name": "Mineração de Dados (Edson)",
-        "dayOfWeek": 2,
-        "classesPerDay": 2,
-        "maxAbsences": 20
-      },
-      {
-        "code": "MND02",
-        "name": "Mineração de Dados (Edson)",
-        "dayOfWeek": 3,
+        "dayOfWeek": "Terça, Quarta",
+        "schedule": "Ter 11:20-13:00 / Qua 07:40-09:20",
         "classesPerDay": 2,
         "maxAbsences": 20
       },
       {
         "code": "QTS01",
-        "name": "Qual. e Testes SW (Edson)",
-        "dayOfWeek": 3,
+        "name": "Qualidade e Testes de Software (Edson)",
+        "dayOfWeek": "Quarta",
+        "schedule": "09:40 - 13:00",
         "classesPerDay": 4,
         "maxAbsences": 20
       },
       {
         "code": "CN201",
-        "name": "Comp. Nuvem II (Renan)",
-        "dayOfWeek": 4,
+        "name": "Computação em Nuvem II (Renan)",
+        "dayOfWeek": "Quinta",
+        "schedule": "09:40 - 13:00",
         "classesPerDay": 4,
         "maxAbsences": 20
       },
       {
         "code": "PLN01",
-        "name": "PLN (Andrea)",
-        "dayOfWeek": 5,
+        "name": "Processamento de Linguagem Natural (PLN) (Andrea)",
+        "dayOfWeek": "Sexta",
+        "schedule": "07:40 - 11:20",
         "classesPerDay": 4,
         "maxAbsences": 20
       },
       {
         "code": "ING04",
         "name": "Inglês IV (Luciano / Valteir)",
-        "dayOfWeek": 5,
+        "dayOfWeek": "Sexta",
+        "schedule": "11:20 - 13:00",
         "classesPerDay": 2,
         "maxAbsences": 10
       }

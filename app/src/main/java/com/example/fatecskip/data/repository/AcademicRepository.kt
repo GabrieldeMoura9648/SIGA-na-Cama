@@ -134,6 +134,10 @@ class AcademicRepository(
         }
     }
 
+    suspend fun removeSubjectFromGrade(subjectId: Long) {
+        subjectDao.deleteSubjectById(subjectId)
+    }
+
     /**
      * Adiciona matéria de outro semestre ("Grade Flexível/Fora de fase") na grade atual
      */
@@ -142,26 +146,51 @@ class AcademicRepository(
         name: String,
         targetSemester: Int,
         dayOfWeek: Int,
+        daysOfWeekStr: String,
+        classTime: String,
         classesPerDay: Int,
         maxAbsences: Int,
         isExtension: Boolean
     ): Long {
         // Verifica se a matéria já existe naquele semestre e dia para não duplicar
-        val existing = subjectDao.getSubjectsBySemesterAndDay(targetSemester, dayOfWeek)
-        val isDuplicate = existing.any { it.code.equals(code, ignoreCase = true) || it.name.equals(name, ignoreCase = true) }
+        val existingAll = subjectDao.getSubjectsBySemesterList(targetSemester)
+        val isDuplicate = existingAll.any { it.code.equals(code, ignoreCase = true) || it.name.equals(name, ignoreCase = true) }
         
         if (isDuplicate) return -1L
+
+        val targetDays = if (daysOfWeekStr.isNotBlank()) {
+            daysOfWeekStr.split(",").mapNotNull { it.trim().toIntOrNull() }
+        } else {
+            listOf(dayOfWeek)
+        }
+
+        existingAll.forEach { existing ->
+            val existingDays = if (existing.daysOfWeek.isNotBlank()) {
+                existing.daysOfWeek.split(",").mapNotNull { it.trim().toIntOrNull() }
+            } else {
+                listOf(existing.dayOfWeek)
+            }
+
+            val dayConflict = existingDays.intersect(targetDays.toSet()).isNotEmpty()
+            val timeConflict = existing.classTime.equals(classTime, ignoreCase = true)
+
+            if (dayConflict && timeConflict) {
+                subjectDao.deleteSubjectById(existing.id) // Substitui a matéria conflitante
+            }
+        }
 
         val subject = SubjectEntity(
             code = code.uppercase().trim(),
             name = name.trim(),
             semester = targetSemester,
             dayOfWeek = dayOfWeek,
+            daysOfWeek = daysOfWeekStr,
             classesPerDay = classesPerDay,
             currentAbsences = 0,
             maxAbsences = maxAbsences,
             isCustomized = true,
-            isExtension = isExtension
+            isExtension = isExtension,
+            classTime = classTime
         )
         return subjectDao.insertSubject(subject)
     }
@@ -335,6 +364,10 @@ class AcademicRepository(
                     val existing = subjectDao.getSubjectsBySemesterList(semInt)
                     val existingMap = existing.associateBy { it.code }
 
+                    val newCodes = subjectDtos.map { it.code }.toSet()
+                    val toDelete = existing.filter { !it.isCustomized && it.code !in newCodes }
+                    toDelete.forEach { subjectDao.deleteSubjectById(it.id) }
+
                     val subjectEntities = subjectDtos.map { dto ->
                         val prev = existingMap[dto.code]
                         
@@ -347,17 +380,27 @@ class AcademicRepository(
                             cleanName = cleanName.substring(0, parensIndex).trim()
                         }
                         
+                        // Mapeia string "Segunda, Terça" para inteiros
+                        val mapDias = mapOf(
+                            "segunda" to 1, "terça" to 2, "terca" to 2,
+                            "quarta" to 3, "quinta" to 4, "sexta" to 5, "sábado" to 6, "sabado" to 6
+                        )
+                        val daysParsed = dto.dayOfWeek.split(",")
+                            .map { it.trim().lowercase() }
+                            .mapNotNull { mapDias[it] }
+
                         SubjectEntity(
                             id = prev?.id ?: 0,
                             code = dto.code,
                             name = cleanName,
                             semester = semInt,
-                            dayOfWeek = dto.dayOfWeek,
+                            dayOfWeek = daysParsed.firstOrNull() ?: 1,
+                            daysOfWeek = daysParsed.joinToString(","),
                             classesPerDay = dto.classesPerDay,
                             currentAbsences = prev?.currentAbsences ?: 0,
                             maxAbsences = dto.maxAbsences,
                             professor = if (prev == null || prev.professor.isBlank() || prev.professor == "Docente não definido") extractedProf else prev.professor,
-                            classTime = prev?.classTime ?: "19:00 - 22:30",
+                            classTime = dto.schedule.ifBlank { "07:40 - 11:20" },
                             isCustomized = prev?.isCustomized ?: false,
                             isExtension = dto.isExtension
                         )

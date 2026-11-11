@@ -326,6 +326,10 @@ fun HomeScreen(
             onSave = { id, prof, time, days, absences ->
                 viewModel.saveSubjectEdits(id, prof, time, days, absences)
                 selectedSubjectForEdit = null
+            },
+            onDeleteSubject = { id ->
+                viewModel.removeSubject(id, subject.name)
+                selectedSubjectForEdit = null
             }
         )
     }

@@ -36,7 +36,7 @@ class UserPreferencesRepository(private val context: Context) {
         const val DEFAULT_SEMESTER = 1
         const val DEFAULT_COURAGE_LEVEL = 0.75f // Estudante Médio
         const val DEFAULT_NICKNAME = "Guerreiro da Fatec"
-        const val DEFAULT_API_URL = "https://gist.githubusercontent.com/DanielFFerre/bcacad977f7036d66885c4268497d6ac/raw/fatec_api.json"
+        const val DEFAULT_API_URL = "https://raw.githubusercontent.com/GabrieldeMoura9648/SIGA-na-Cama/feat/rebrand-siga-na-cama/fatec_api.json"
     }
 
     val selectedSemesterFlow: Flow<Int> = dataStore.data

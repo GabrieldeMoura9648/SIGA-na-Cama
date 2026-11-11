@@ -29,10 +29,11 @@
 * **O que fazer na tela:**
   1. Mostre os cards das matérias da Fatec com professores e horários.
   2. Clique no botão `+4` (ou `+2`) em uma matéria para somar faltas e veja a barra mudar de cor.
-  3. Clique no ícone de **Lápis** (`EditSubjectDialog.kt`) ou em **+ Matéria Extra** (`AddExtraSubjectDialog.kt`) para mostrar que o aluno pode fazer matéria de outro semestre.
+  3. Clique no ícone de **Lápis** (`EditSubjectDialog.kt`) e apague uma matéria com o botão **Retirar da Grade**.
+  4. Vá em **+ Matéria Extra**, tente adicionar uma DP no mesmo horário de outra aula. Mostre o aviso de *"Conflito de horário"* substituindo a matéria na grade!
 * **O que falar (marcando +2 requisitos):**
-  > "Mas de onde vieram todas essas matérias de DSM? Da nossa **API REST** (`FatecApiService.kt`)! Quando escolhemos o semestre, o Retrofit busca na nuvem o catálogo oficial da Fatec e até algumas desculpas criativas caso você precise explicar por que sumiu.
-  > E se o Wi-Fi da Fatec cair? Nós fizemos um sistema *Offline-First*: a API baixa os dados e salva tudo no **SQLite via Room Database** (`AppDatabase.kt`). Se eu editar o nome do professor ou somar minhas faltas aqui, o SQLite marca essa matéria como customizada (`isCustomized`) para nunca perder minhas anotações!"
+  > "Mas de onde vieram todas essas matérias de DSM? Da nossa **API REST** (`FatecApiService.kt`)! Quando abrimos o app, ele faz um *Auto-Sync*: o Retrofit baixa a grade da nuvem e faz um *Smart Merge* para o nosso banco local de forma 100% transparente.
+  > Salvamos isso no nosso **SQLite via Room Database** (`AppDatabase.kt`). O mais legal é o nosso **Gerenciador de Conflitos**: se eu puxar uma matéria de DP e ela cair exatamente no mesmo dia e horário da minha grade normal, o banco intercepta a intersecção de dias e já avisa na tela, permitindo substituir uma pela outra para a grade não bugar, respeitando as regras do SIGA!"
 
 ---
 

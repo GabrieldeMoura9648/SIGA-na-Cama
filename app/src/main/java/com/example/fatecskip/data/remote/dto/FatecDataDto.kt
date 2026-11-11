@@ -43,7 +43,10 @@ data class SubjectDto(
     val name: String,
 
     @SerializedName("dayOfWeek")
-    val dayOfWeek: Int,
+    val dayOfWeek: String,
+
+    @SerializedName("schedule")
+    val schedule: String = "07:40 - 11:20",
 
     @SerializedName("classesPerDay")
     val classesPerDay: Int = 4,
