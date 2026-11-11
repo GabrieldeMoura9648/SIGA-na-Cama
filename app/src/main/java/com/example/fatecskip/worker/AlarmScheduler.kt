@@ -8,10 +8,10 @@ import android.os.Build
 import android.util.Log
 import java.time.LocalDateTime
 import java.time.ZoneId
+import java.util.regex.Pattern
 
 import kotlinx.coroutines.flow.first
 import com.example.fatecskip.FatecSkipApp
-import java.time.format.DateTimeFormatter
 
 object AlarmScheduler {
 
@@ -39,34 +39,47 @@ object AlarmScheduler {
         var minute = prefs.alarmMinuteFlow.first()
         
         val now = LocalDateTime.now()
-        var nextAlarmDate = now.toLocalDate()
-        if (now.hour > hour || (now.hour == hour && now.minute >= minute)) {
-            nextAlarmDate = nextAlarmDate.plusDays(1)
-        }
-        
+        val today = now.toLocalDate()
+        val fixedAlarmToday = today.atTime(hour, minute)
+        var nextAlarmDate = if (fixedAlarmToday.isAfter(now)) today else today.plusDays(1)
+
         if (isAuto) {
             val semester = prefs.selectedSemesterFlow.first()
-            val tomorrowSubjects = repo.getSubjectsBySemesterList(semester).filter { sub ->
-                sub.daysOfWeek.split(",").mapNotNull { d -> d.trim().toIntOrNull() }.contains(nextAlarmDate.dayOfWeek.value) 
-                || sub.dayOfWeek == nextAlarmDate.dayOfWeek.value
+            val subjects = repo.getSubjectsBySemesterList(semester)
+            val offset = prefs.alarmAutoOffsetMinutesFlow.first()
+            val startTimePattern = Pattern.compile("""(\d{1,2}):(\d{2})""")
+
+            fun alarmTimeFor(date: java.time.LocalDate): LocalDateTime? {
+                val dayOfWeek = date.dayOfWeek.value
+                val firstClassMinutes = subjects.asSequence()
+                    .filter { it.isClassOnDay(dayOfWeek) }
+                    .mapNotNull { subject ->
+                        val match = startTimePattern.matcher(subject.classTime.substringBefore("-"))
+                        if (!match.find()) return@mapNotNull null
+                        val hourText = match.group(1) ?: return@mapNotNull null
+                        val minuteText = match.group(2) ?: return@mapNotNull null
+                        val classHour = hourText.toIntOrNull() ?: return@mapNotNull null
+                        val classMinute = minuteText.toIntOrNull() ?: return@mapNotNull null
+                        if (classHour !in 0..23 || classMinute !in 0..59) return@mapNotNull null
+                        classHour * 60 + classMinute
+                    }
+                    .minOrNull()
+                    ?: return null
+
+                return date.atStartOfDay().plusMinutes((firstClassMinutes - offset).toLong())
             }
-            if (tomorrowSubjects.isNotEmpty()) {
-                val earliestTime = tomorrowSubjects.map { it.classTime }.minOrNull() ?: "07:40 - 11:20"
-                val timePart = earliestTime.split("-")[0].trim().replace(Regex("[^0-9:]"), "")
-                val parts = timePart.split(":")
-                if (parts.size >= 2) {
-                    val classHour = parts[0].toIntOrNull() ?: 7
-                    val classMinute = parts[1].toIntOrNull() ?: 40
-                    
-                    val offset = prefs.alarmAutoOffsetMinutesFlow.first()
-                    var totalMinutes = classHour * 60 + classMinute - offset
-                    if (totalMinutes < 0) totalMinutes += 24 * 60
-                    
-                    hour = totalMinutes / 60
-                    minute = totalMinutes % 60
-                }
+
+            val nextAutoAlarm = sequenceOf(today, today.plusDays(1))
+                .mapNotNull(::alarmTimeFor)
+                .filter { it.isAfter(now) }
+                .minOrNull()
+
+            if (nextAutoAlarm != null) {
+                nextAlarmDate = nextAutoAlarm.toLocalDate()
+                hour = nextAutoAlarm.hour
+                minute = nextAutoAlarm.minute
             } else {
-                Log.d(TAG, "Nenhuma aula amanhã, mas agendando alarme padrão mesmo assim (pode ser cancelado via UI se desejado).")
+                Log.d(TAG, "Nenhum horário de aula futuro hoje ou amanhã; mantendo o horário fixo configurado.")
             }
         }
         

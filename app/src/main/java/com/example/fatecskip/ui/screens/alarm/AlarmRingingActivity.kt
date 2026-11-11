@@ -170,14 +170,23 @@ class AlarmRingingActivity : ComponentActivity() {
     private fun startAlarmSound() {
         lifecycleScope.launch {
             if (activeRingtone?.isPlaying == true || activeMediaPlayer?.isPlaying == true) return@launch
-            
+
+            var customPlayer: MediaPlayer? = null
             try {
                 val app = application as FatecSkipApp
                 val customPath = app.preferencesRepository.customAlarmPathFlow.first()
                 if (!customPath.isNullOrBlank()) {
                     val file = File(customPath)
                     if (file.exists() && file.length() > 0) {
-                        activeMediaPlayer = MediaPlayer().apply {
+                        val player = MediaPlayer()
+                        customPlayer = player
+                        activeMediaPlayer = player
+                        player.setOnErrorListener { failedPlayer, what, extra ->
+                            Log.e(TAG, "Erro assíncrono no som customizado ($what/$extra); usando ringtone nativo.")
+                            startNativeAlarmSound(failedPlayer)
+                            true
+                        }
+                        player.apply {
                             setAudioAttributes(
                                 AudioAttributes.Builder()
                                     .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
@@ -194,19 +203,38 @@ class AlarmRingingActivity : ComponentActivity() {
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Erro ao tocar som customizado, caindo para fallback.", e)
+                startNativeAlarmSound(customPlayer)
+                return@launch
             }
 
-            // Fallback: Regra de Ouro
+            startNativeAlarmSound()
+        }
+    }
+
+    private fun startNativeAlarmSound(failedPlayer: MediaPlayer? = null) {
+        failedPlayer?.let { player ->
+            if (activeMediaPlayer === player) activeMediaPlayer = null
+            try {
+                player.release()
+            } catch (e: IllegalStateException) {
+                Log.w(TAG, "O player customizado já estava encerrado.", e)
+            }
+        }
+        if (activeRingtone?.isPlaying == true) return
+
+        try {
             val alarmUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
             if (alarmUri == null) {
                 Log.w(TAG, "O dispositivo não possui um toque de alarme padrão.")
-                return@launch
+                return
             }
             activeRingtone = RingtoneManager.getRingtone(applicationContext, alarmUri)
             activeRingtone?.let {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) it.isLooping = true
                 it.play()
             } ?: Log.w(TAG, "Não foi possível iniciar o toque de alarme.")
+        } catch (e: Exception) {
+            Log.e(TAG, "Não foi possível iniciar o toque de alarme nativo.", e)
         }
     }
 

@@ -6,10 +6,11 @@ import com.example.fatecskip.data.remote.MyInstantsApiClient
 import com.example.fatecskip.data.remote.dto.MyInstantSoundDto
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import okhttp3.Request
 import java.io.File
+import java.io.IOException
 import java.net.URLEncoder
 import java.util.regex.Pattern
+import okhttp3.Request
 
 class ExternalSoundRepository(private val context: Context) {
     private val htmlClient = MyInstantsApiClient.client
@@ -141,31 +142,51 @@ class ExternalSoundRepository(private val context: Context) {
     }
 
     suspend fun downloadAndCacheSound(soundId: String, mp3Url: String): String? = withContext(Dispatchers.IO) {
+        val safeSoundId = soundId.replace(Regex("[^A-Za-z0-9_-]"), "_").take(120)
+        if (safeSoundId.isBlank()) {
+            Log.e("ExternalSound", "ID inválido para salvar o áudio.")
+            return@withContext null
+        }
+
+        val dir = File(context.filesDir, "custom_alarms")
+        val temporaryFile = File(dir, "$safeSoundId.mp3.part")
         try {
-            val dir = File(context.filesDir, "custom_alarms")
-            if (!dir.exists()) dir.mkdirs()
-
-            dir.listFiles()?.forEach { it.delete() }
-
-            val file = File(dir, "$soundId.mp3")
-            
-            val request = Request.Builder().url(mp3Url).build()
-            val response = htmlClient.newCall(request).execute()
-            
-            if (response.isSuccessful) {
-                val responseBody = response.peekBody(Long.MAX_VALUE)
-                responseBody.byteStream().use { input ->
-                    file.outputStream().use { output ->
-                        input.copyTo(output)
-                    }
-                }
-                file.absolutePath
-            } else {
-                null
+            if (!dir.exists() && !dir.mkdirs()) {
+                throw IOException("Não foi possível criar o diretório de cache.")
             }
+            val file = File(dir, "$safeSoundId.mp3")
+            val request = Request.Builder().url(mp3Url).build()
+            htmlClient.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) return@withContext null
+                val responseBody = response.body() ?: return@withContext null
+                responseBody.byteStream().use { input ->
+                    temporaryFile.outputStream().use { output -> input.copyTo(output) }
+                }
+            }
+
+            if (temporaryFile.length() == 0L) {
+                throw IOException("O arquivo de áudio baixado está vazio.")
+            }
+
+            val cachedFiles = dir.listFiles()
+                ?: throw IOException("Não foi possível listar o diretório de cache.")
+            cachedFiles.filter { it != temporaryFile && it != file }.forEach { oldFile ->
+                if (!oldFile.delete()) {
+                    throw IOException("Não foi possível remover um arquivo de áudio antigo.")
+                }
+            }
+            if (file.exists() && !file.delete()) {
+                throw IOException("Não foi possível substituir o arquivo de áudio existente.")
+            }
+            if (!temporaryFile.renameTo(file)) {
+                throw IOException("Não foi possível finalizar o arquivo de áudio baixado.")
+            }
+            file.absolutePath
         } catch (e: Exception) {
             Log.e("ExternalSound", "Erro ao baixar MP3", e)
             null
+        } finally {
+            temporaryFile.delete()
         }
     }
 }
