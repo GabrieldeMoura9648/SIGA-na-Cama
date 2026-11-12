@@ -1,5 +1,10 @@
 package com.example.fatecskip.ui.screens.onboarding
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.core.tween
@@ -49,10 +54,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import com.example.fatecskip.data.local.DefaultFatecData
 
 @OptIn(ExperimentalAnimationApi::class)
@@ -62,9 +69,29 @@ fun OnboardingScreen(
     onComplete: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     val currentStep by viewModel.currentStep.collectAsState()
     val nickname by viewModel.nickname.collectAsState()
     val semester by viewModel.selectedSemester.collectAsState()
+
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) {
+        viewModel.finishOnboarding(onComplete)
+    }
+
+    val completeOnboarding = {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        } else {
+            viewModel.finishOnboarding(onComplete)
+        }
+    }
 
     val progress = currentStep / 2f
 
@@ -188,7 +215,7 @@ fun OnboardingScreen(
                     }
                 } else {
                     Button(
-                        onClick = { viewModel.finishOnboarding(onComplete) },
+                        onClick = completeOnboarding,
                         shape = RoundedCornerShape(14.dp),
                         modifier = Modifier.height(52.dp),
                         colors = ButtonDefaults.buttonColors(

@@ -264,14 +264,17 @@ class AlarmRingingActivity : ComponentActivity() {
             try {
                 val preferences = (application as FatecSkipApp).preferencesRepository
                 val semester = preferences.selectedSemesterFlow.first()
+                val today = LocalDate.now()
                 val verdict = (application as FatecSkipApp).repository.evaluateSkipVerdict(
-                    date = LocalDate.now(),
+                    date = today,
                     semester = semester
                 )
-                hasClassesToday = (application as FatecSkipApp).repository
+                val repository = (application as FatecSkipApp).repository
+                val isHoliday = repository.isAcademicHoliday(today)
+                hasClassesToday = !isHoliday && repository
                     .getSubjectsForSemester(semester)
                     .first()
-                    .any { it.isClassOnDay(LocalDate.now().dayOfWeek.value) }
+                    .any { it.isClassOnDay(today.dayOfWeek.value) }
                 dailyPlanMessage = when (verdict) {
                     is SkipVerdict.ForbiddenCriticalEvent ->
                         "🚨 DIA DE PROVA! Nem pense em ativar o modo soneca!"

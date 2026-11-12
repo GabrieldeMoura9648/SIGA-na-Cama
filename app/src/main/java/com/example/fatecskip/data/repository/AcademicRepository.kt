@@ -20,7 +20,8 @@ class AcademicRepository(
     private val eventDao: EventDao,
     private val excuseDao: ExcuseDao,
     private val apiService: FatecApiService,
-    private val preferencesRepository: UserPreferencesRepository
+    private val preferencesRepository: UserPreferencesRepository,
+    private val holidayRepository: HolidayRepository
 ) {
 
     fun getSubjectsForSemester(semester: Int): Flow<List<SubjectEntity>> {
@@ -44,6 +45,11 @@ class AcademicRepository(
         return excuseDao.getAllExcuses()
     }
 
+    suspend fun isAcademicHoliday(date: LocalDate): Boolean {
+        return eventDao.getHolidaysByDate(date.toString()).isNotEmpty() ||
+            holidayRepository.isHoliday(date)
+    }
+
     suspend fun incrementAbsence(subject: SubjectEntity, count: Int = 1) {
         val updated = subject.copy(
             currentAbsences = (subject.currentAbsences + count).coerceAtMost(subject.maxAbsences + 20)
@@ -62,6 +68,8 @@ class AcademicRepository(
         semester: Int,
         date: LocalDate = LocalDate.now()
     ): Int {
+        if (isAcademicHoliday(date)) return 0
+
         val dayOfWeek = date.dayOfWeek.value
         val subjectsToday = subjectDao.getSubjectsBySemesterList(semester)
             .filter { it.isClassOnDay(dayOfWeek) }
@@ -217,10 +225,9 @@ class AcademicRepository(
         val dateString = date.format(DateTimeFormatter.ISO_LOCAL_DATE) // YYYY-MM-DD
         val dayOfWeek = date.dayOfWeek.value // 1 (Segunda) .. 7 (Domingo)
 
-        // 1. Verificação de Domingo ou Feriado Oficial
-        val holidaysToday = eventDao.getHolidaysByDate(dateString)
-        if (holidaysToday.isNotEmpty()) {
-            val holidayTitle = holidaysToday.first().title
+        // 1. Verificação de Domingo ou Feriado
+        if (isAcademicHoliday(date)) {
+            val holidayTitle = eventDao.getHolidaysByDate(dateString).firstOrNull()?.title ?: "Feriado"
             val messages = listOf(
                 "Levanta pra quê? Hoje é feriado ($holidayTitle) na Fatec! O campus tá trancado e o cobertor te abraçou.",
                 "Glória a Deux! Hoje é $holidayTitle. Desliga o despertador e volta a dormir com a bênção da coordenação!",

@@ -119,6 +119,16 @@ fun SettingsScreen(
             viewModel.triggerTestNotification(context, nicknameInput)
         }
     }
+    val notificationSettingPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) viewModel.updateNotificationsEnabled(true)
+    }
+    val previewSettingPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) viewModel.updateNightPreviewEnabled(context, true)
+    }
     val alarmTestPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { viewModel.triggerTestAlarm(context) }
@@ -283,7 +293,20 @@ fun SettingsScreen(
                             }
                             Switch(
                                 checked = notificationsEnabled,
-                                onCheckedChange = { viewModel.updateNotificationsEnabled(it) }
+                                onCheckedChange = { enabled ->
+                                    if (!enabled || Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+                                        ContextCompat.checkSelfPermission(
+                                            context,
+                                            Manifest.permission.POST_NOTIFICATIONS
+                                        ) == PackageManager.PERMISSION_GRANTED
+                                    ) {
+                                        viewModel.updateNotificationsEnabled(enabled)
+                                    } else {
+                                        notificationSettingPermissionLauncher.launch(
+                                            Manifest.permission.POST_NOTIFICATIONS
+                                        )
+                                    }
+                                }
                             )
                         }
 
@@ -498,7 +521,20 @@ fun SettingsScreen(
                             }
                             Switch(
                                 checked = nightPreviewEnabled,
-                                onCheckedChange = { viewModel.updateNightPreviewEnabled(context, it) }
+                                onCheckedChange = { enabled ->
+                                    if (!enabled || Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+                                        ContextCompat.checkSelfPermission(
+                                            context,
+                                            Manifest.permission.POST_NOTIFICATIONS
+                                        ) == PackageManager.PERMISSION_GRANTED
+                                    ) {
+                                        viewModel.updateNightPreviewEnabled(context, enabled)
+                                    } else {
+                                        previewSettingPermissionLauncher.launch(
+                                            Manifest.permission.POST_NOTIFICATIONS
+                                        )
+                                    }
+                                }
                             )
                         }
 

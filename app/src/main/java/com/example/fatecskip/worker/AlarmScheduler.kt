@@ -75,7 +75,7 @@ object AlarmScheduler {
                         .plusMinutes((firstClassMinutes - offset).toLong())
                     if (!candidateAlarm.isAfter(now)) continue
 
-                    if (app.holidayRepository.isHoliday(candidateDate)) {
+                    if (repo.isAcademicHoliday(candidateDate)) {
                         Log.i(TAG, "Alarme automático ignorado em $candidateDate: feriado.")
                         continue
                     }

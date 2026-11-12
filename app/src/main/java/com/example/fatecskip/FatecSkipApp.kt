@@ -49,7 +49,8 @@ class FatecSkipApp : Application() {
             eventDao = database.eventDao(),
             excuseDao = database.excuseDao(),
             apiService = apiService,
-            preferencesRepository = preferencesRepository
+            preferencesRepository = preferencesRepository,
+            holidayRepository = holidayRepository
         )
 
         NotificationHelper.createNotificationChannel(this)
