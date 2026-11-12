@@ -12,6 +12,15 @@ Aplicativo Android para estudantes de Desenvolvimento de Software Multiplataform
 
 Conciliar horários, provas e frequência pode gerar ansiedade e decisões baseadas em informações dispersas. O SIGA na cama reúne o acompanhamento de disciplinas e faltas, sinaliza eventos e limites de frequência e lembra que um atestado curto não significa abono automático. A orientação considera o limite configurado por disciplina, a possibilidade de perda do Exame Final por reprovação de frequência e o tratamento indicado no app para componentes de extensão.
 
+## Versão atual: v1.2.0
+
+### Notas de lançamento
+
+- Personalização de horários de aula para cada dia da semana.
+- Unificação da consulta de feriados acadêmicos e oficiais, com bloqueio do registro de faltas em feriados.
+- Migrações seguras do Room para preservar os dados existentes durante atualizações do banco.
+- Restauração dos alarmes após a reinicialização do dispositivo por meio do `BootReceiver`.
+
 ## Funcionalidades e telas
 
 - **Onboarding:** configuração inicial de apelido e semestre. Ao tocar em **Começar**, o app salva as escolhas e sincroniza a grade antes de concluir o onboarding; alarmes e notificações ficam bloqueados até essa conclusão.
