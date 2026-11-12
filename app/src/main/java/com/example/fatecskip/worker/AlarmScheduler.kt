@@ -9,6 +9,7 @@ import android.util.Log
 import com.example.fatecskip.FatecSkipApp
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withTimeoutOrNull
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.util.regex.Pattern
@@ -28,6 +29,7 @@ object AlarmScheduler {
     private const val REQUEST_NIGHT_PREVIEW = 5104
     private const val REQUEST_TEST_NIGHT_PREVIEW = 5105
     private const val TAG = "AlarmScheduler"
+    private const val HOLIDAY_CHECK_TIMEOUT_MILLIS = 2_000L
 
     suspend fun scheduleDailyAlarm(context: Context): Boolean {
         val app = context.applicationContext as FatecSkipApp
@@ -44,30 +46,30 @@ object AlarmScheduler {
         var nextAlarmDate = if (fixedAlarmToday.isAfter(now)) today else today.plusDays(1)
 
         if (isAuto) {
-            val semester = prefs.selectedSemesterFlow.first()
-            val subjects = repo.getSubjectsBySemesterList(semester)
-            val offset = prefs.alarmAutoOffsetMinutesFlow.first()
-            val startTimePattern = Pattern.compile("""(\d{1,2}):(\d{2})""")
-
-            val firstClassMinutesByDay = (1..7).mapNotNull { day ->
-                val earliestStart = subjects.asSequence()
-                    .filter { it.isClassOnDay(day) }
-                    .mapNotNull { subject ->
-                        val match = startTimePattern.matcher(subject.classTime.substringBefore("-"))
-                        if (!match.find()) return@mapNotNull null
-                        val hourText = match.group(1) ?: return@mapNotNull null
-                        val minuteText = match.group(2) ?: return@mapNotNull null
-                        val classHour = hourText.toIntOrNull() ?: return@mapNotNull null
-                        val classMinute = minuteText.toIntOrNull() ?: return@mapNotNull null
-                        if (classHour !in 0..23 || classMinute !in 0..59) return@mapNotNull null
-                        classHour * 60 + classMinute
-                    }
-                    .minOrNull()
-                earliestStart?.let { day to it }
-            }.toMap()
-
-            var selectedAutoAlarm: LocalDateTime? = null
             try {
+                val semester = prefs.selectedSemesterFlow.first()
+                val subjects = repo.getSubjectsBySemesterList(semester)
+                val offset = prefs.alarmAutoOffsetMinutesFlow.first()
+                val startTimePattern = Pattern.compile("""(\d{1,2}):(\d{2})""")
+
+                val firstClassMinutesByDay = (1..7).mapNotNull { day ->
+                    val earliestStart = subjects.asSequence()
+                        .filter { it.isClassOnDay(day) }
+                        .mapNotNull { subject ->
+                            val match = startTimePattern.matcher(subject.classTime.substringBefore("-"))
+                            if (!match.find()) return@mapNotNull null
+                            val hourText = match.group(1) ?: return@mapNotNull null
+                            val minuteText = match.group(2) ?: return@mapNotNull null
+                            val classHour = hourText.toIntOrNull() ?: return@mapNotNull null
+                            val classMinute = minuteText.toIntOrNull() ?: return@mapNotNull null
+                            if (classHour !in 0..23 || classMinute !in 0..59) return@mapNotNull null
+                            classHour * 60 + classMinute
+                        }
+                        .minOrNull()
+                    earliestStart?.let { day to it }
+                }.toMap()
+
+                var selectedAutoAlarm: LocalDateTime? = null
                 for (dayOffset in 0..366) {
                     val candidateDate = today.plusDays(dayOffset.toLong())
                     val firstClassMinutes = firstClassMinutesByDay[candidateDate.dayOfWeek.value] ?: continue
@@ -75,7 +77,17 @@ object AlarmScheduler {
                         .plusMinutes((firstClassMinutes - offset).toLong())
                     if (!candidateAlarm.isAfter(now)) continue
 
-                    if (repo.isAcademicHoliday(candidateDate)) {
+                    val isHoliday = try {
+                        withTimeoutOrNull(HOLIDAY_CHECK_TIMEOUT_MILLIS) {
+                            repo.isAcademicHoliday(candidateDate)
+                        } ?: false
+                    } catch (exception: CancellationException) {
+                        throw exception
+                    } catch (exception: Exception) {
+                        Log.w(TAG, "Não foi possível validar $candidateDate como feriado; seguindo com o alarme.", exception)
+                        false
+                    }
+                    if (isHoliday) {
                         Log.i(TAG, "Alarme automático ignorado em $candidateDate: feriado.")
                         continue
                     }
@@ -83,22 +95,20 @@ object AlarmScheduler {
                     selectedAutoAlarm = candidateAlarm
                     break
                 }
+
+                if (selectedAutoAlarm != null) {
+                    nextAlarmDate = selectedAutoAlarm.toLocalDate()
+                    hour = selectedAutoAlarm.hour
+                    minute = selectedAutoAlarm.minute
+                } else {
+                    Log.i(TAG, "Nenhum dia letivo futuro encontrado; alarme automático desativado.")
+                    cancelDailyAlarm(context)
+                    return true
+                }
             } catch (exception: CancellationException) {
                 throw exception
             } catch (exception: Exception) {
-                Log.e(TAG, "Não foi possível validar feriados; alarme automático desativado por segurança.", exception)
-                cancelDailyAlarm(context)
-                return true
-            }
-
-            if (selectedAutoAlarm != null) {
-                nextAlarmDate = selectedAutoAlarm.toLocalDate()
-                hour = selectedAutoAlarm.hour
-                minute = selectedAutoAlarm.minute
-            } else {
-                Log.i(TAG, "Nenhum dia letivo futuro encontrado; alarme automático desativado.")
-                cancelDailyAlarm(context)
-                return true
+                Log.e(TAG, "Não foi possível calcular o próximo dia letivo; usando o horário manual configurado.", exception)
             }
         }
         

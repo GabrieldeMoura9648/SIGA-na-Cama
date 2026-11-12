@@ -168,9 +168,10 @@ class AlarmRingingActivity : ComponentActivity() {
     }
 
     private fun startAlarmSound() {
-        lifecycleScope.launch {
-            if (activeRingtone?.isPlaying == true || activeMediaPlayer?.isPlaying == true) return@launch
+        if (activeRingtone?.isPlaying == true || activeMediaPlayer?.isPlaying == true) return
+        startNativeAlarmSound()
 
+        lifecycleScope.launch {
             var customPlayer: MediaPlayer? = null
             try {
                 val app = application as FatecSkipApp
@@ -181,45 +182,57 @@ class AlarmRingingActivity : ComponentActivity() {
                         val player = MediaPlayer()
                         customPlayer = player
                         activeMediaPlayer = player
+                        player.setAudioAttributes(
+                            AudioAttributes.Builder()
+                                .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                                .setUsage(AudioAttributes.USAGE_ALARM)
+                                .build()
+                        )
+                        player.isLooping = true
+                        player.setOnPreparedListener { preparedPlayer ->
+                            if (activeMediaPlayer === preparedPlayer && !isAlarmHandled && !isFinishing) {
+                                activeRingtone?.stop()
+                                activeRingtone = null
+                                preparedPlayer.start()
+                            }
+                        }
                         player.setOnErrorListener { failedPlayer, what, extra ->
                             Log.e(TAG, "Erro assíncrono no som customizado ($what/$extra); usando ringtone nativo.")
-                            startNativeAlarmSound(failedPlayer)
+                            if (activeMediaPlayer === failedPlayer) {
+                                activeMediaPlayer = null
+                                try {
+                                    failedPlayer.release()
+                                } catch (exception: IllegalStateException) {
+                                    Log.w(TAG, "O player customizado já estava encerrado.", exception)
+                                }
+                            }
                             true
                         }
-                        player.apply {
-                            setAudioAttributes(
-                                AudioAttributes.Builder()
-                                    .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                                    .setUsage(AudioAttributes.USAGE_ALARM)
-                                    .build()
-                            )
-                            setDataSource(file.absolutePath)
-                            isLooping = true
-                            prepare()
-                            start()
-                        }
+                        player.setDataSource(file.absolutePath)
+                        player.prepareAsync()
                         return@launch
                     }
                 }
-            } catch (e: Exception) {
-                Log.e(TAG, "Erro ao tocar som customizado, caindo para fallback.", e)
-                startNativeAlarmSound(customPlayer)
+            } catch (exception: kotlinx.coroutines.CancellationException) {
+                customPlayer?.release()
+                if (activeMediaPlayer === customPlayer) activeMediaPlayer = null
+                throw exception
+            } catch (exception: Exception) {
+                Log.e(TAG, "Erro ao tocar som customizado; mantendo ringtone nativo.", exception)
+                customPlayer?.let { player ->
+                    if (activeMediaPlayer === player) activeMediaPlayer = null
+                    try {
+                        player.release()
+                    } catch (releaseException: IllegalStateException) {
+                        Log.w(TAG, "O player customizado já estava encerrado.", releaseException)
+                    }
+                }
                 return@launch
             }
-
-            startNativeAlarmSound()
         }
     }
 
-    private fun startNativeAlarmSound(failedPlayer: MediaPlayer? = null) {
-        failedPlayer?.let { player ->
-            if (activeMediaPlayer === player) activeMediaPlayer = null
-            try {
-                player.release()
-            } catch (e: IllegalStateException) {
-                Log.w(TAG, "O player customizado já estava encerrado.", e)
-            }
-        }
+    private fun startNativeAlarmSound() {
         if (activeRingtone?.isPlaying == true) return
 
         try {
@@ -270,7 +283,14 @@ class AlarmRingingActivity : ComponentActivity() {
                     semester = semester
                 )
                 val repository = (application as FatecSkipApp).repository
-                val isHoliday = repository.isAcademicHoliday(today)
+                val isHoliday = try {
+                    repository.isAcademicHoliday(today)
+                } catch (exception: kotlinx.coroutines.CancellationException) {
+                    throw exception
+                } catch (exception: Exception) {
+                    Log.w(TAG, "Não foi possível verificar feriado para o botão de falta.", exception)
+                    false
+                }
                 hasClassesToday = !isHoliday && repository
                     .getSubjectsForSemester(semester)
                     .first()

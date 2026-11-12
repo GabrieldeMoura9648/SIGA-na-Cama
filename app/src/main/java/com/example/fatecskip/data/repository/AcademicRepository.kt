@@ -46,8 +46,8 @@ class AcademicRepository(
     }
 
     suspend fun isAcademicHoliday(date: LocalDate): Boolean {
-        return eventDao.getHolidaysByDate(date.toString()).isNotEmpty() ||
-            holidayRepository.isHoliday(date)
+        if (eventDao.getHolidaysByDate(date.toString()).isNotEmpty()) return true
+        return runCatching { holidayRepository.isHoliday(date) }.getOrDefault(false)
     }
 
     suspend fun incrementAbsence(subject: SubjectEntity, count: Int = 1) {

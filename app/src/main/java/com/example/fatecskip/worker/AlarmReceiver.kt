@@ -60,6 +60,18 @@ class AlarmReceiver : BroadcastReceiver() {
             return
         }
 
+        showAlarmNotification(applicationContext, alarmType)
+
+        val activityIntent = Intent(applicationContext, AlarmRingingActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra(AlarmScheduler.EXTRA_ALARM_TYPE, alarmType)
+        }
+        try {
+            applicationContext.startActivity(activityIntent)
+        } catch (exception: SecurityException) {
+            Log.i(TAG, "A Activity será aberta pelo full-screen intent da notificação.", exception)
+        }
+
         if (alarmType == AlarmScheduler.TYPE_DAILY) {
             val pendingResult = goAsync()
             CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
@@ -74,18 +86,6 @@ class AlarmReceiver : BroadcastReceiver() {
                     pendingResult.finish()
                 }
             }
-        }
-
-        showAlarmNotification(applicationContext, alarmType)
-
-        val activityIntent = Intent(applicationContext, AlarmRingingActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-            putExtra(AlarmScheduler.EXTRA_ALARM_TYPE, alarmType)
-        }
-        try {
-            applicationContext.startActivity(activityIntent)
-        } catch (exception: SecurityException) {
-            Log.i(TAG, "A Activity será aberta pelo full-screen intent da notificação.", exception)
         }
     }
 
