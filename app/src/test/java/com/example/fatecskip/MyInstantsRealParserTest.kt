@@ -1,12 +1,9 @@
 package com.example.fatecskip
 
 import com.example.fatecskip.data.repository.ExternalSoundRepository
-import okhttp3.OkHttpClient
-import okhttp3.Request
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.util.concurrent.TimeUnit
 
 class MyInstantsRealParserTest {
 
@@ -47,39 +44,21 @@ class MyInstantsRealParserTest {
     }
 
     @Test
-    fun `test live fetch from myinstants BR`() {
-        val client = OkHttpClient.Builder()
-            .addInterceptor { chain ->
-                val request = chain.request().newBuilder()
-                    .header("User-Agent", "Mozilla/5.0")
-                    .build()
-                chain.proceed(request)
-            }
-            .connectTimeout(8, TimeUnit.SECONDS)
-            .readTimeout(8, TimeUnit.SECONDS)
-            .callTimeout(8, TimeUnit.SECONDS)
-            .build()
-
-        val request = Request.Builder().url("https://www.myinstants.com/pt/index/br/").build()
-        val response = client.newCall(request).execute()
-        val html = response.use {
-            it.body()?.bytes()?.toString(Charsets.UTF_8).orEmpty()
-        }
-        assertTrue("HTML body should not be empty", html.isNotEmpty())
-
+    fun `test sample MyInstants HTML parses UTF-8 and filters blocked terms offline`() {
+        val html = """
+            <button class="small-button" onclick="play('/media/sounds/jogo-do-botão.mp3', 'loader-1', 'jogo-do-botão-65965')" title="Tocar o som de Jogo do botão" type="button"></button>
+            <button class="small-button" onclick="play('/media/sounds/gemidão.mp3', 'loader-2', 'safe-id')" title="Tocar o som de Som impróprio" type="button"></button>
+            <button class="small-button" onclick="play('/media/sounds/som-seguro.mp3', 'loader-3', 'fdr-meme')" title="Tocar o som de Outro som" type="button"></button>
+            <button class="small-button" onclick="play('/media/sounds/som-seguro.mp3', 'loader-4', 'safe-id-2')" title="Tocar o som de Porra qualquer" type="button"></button>
+        """.trimIndent()
         val list = ExternalSoundRepository.parseHtml(html)
 
-        println("=== Live Fetch Results ===")
-        println("Total items found: ${list.size}")
-        list.take(5).forEach { item ->
-            println("- ID: ${item.id} | Title: ${item.title} | MP3: ${item.mp3}")
-        }
-        println("==========================")
-
-        assertTrue("Live fetch deve extrair sons!", list.isNotEmpty())
-        assertTrue(
-            "O título Jogo do botão deve preservar o caractere ã",
-            list.any { it.title == "Jogo do botão" }
+        assertEquals(1, list.size)
+        assertEquals("jogo-do-botão-65965", list.single().id)
+        assertEquals("Jogo do botão", list.single().title)
+        assertEquals(
+            "https://www.myinstants.com/media/sounds/jogo-do-botão.mp3",
+            list.single().mp3
         )
     }
 }
