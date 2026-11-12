@@ -109,7 +109,9 @@ class AcademicRepository(
         semester: Int,
         dayOfWeek: Int,
         classesPerDay: Int,
-        maxAbsences: Int
+        maxAbsences: Int,
+        daysOfWeek: String = "",
+        classTime: String = "07:40 - 11:20"
     ): Long {
         val extensionCodes = setOf("ES101", "ES201", "GAG01", "LDW01", "LDM01", "LDM02")
         val subject = SubjectEntity(
@@ -117,11 +119,13 @@ class AcademicRepository(
             name = name.trim(),
             semester = semester,
             dayOfWeek = dayOfWeek,
+            daysOfWeek = daysOfWeek,
             classesPerDay = classesPerDay,
             currentAbsences = 0,
             maxAbsences = maxAbsences,
             isCustomized = true,
-            isExtension = extensionCodes.contains(code.uppercase().trim())
+            isExtension = extensionCodes.contains(code.uppercase().trim()),
+            classTime = classTime.trim()
         )
         return subjectDao.insertSubject(subject)
     }
@@ -183,10 +187,12 @@ class AcademicRepository(
                 listOf(existing.dayOfWeek)
             }
 
-            val dayConflict = existingDays.intersect(targetDays.toSet()).isNotEmpty()
-            val timeConflict = existing.classTime.equals(classTime, ignoreCase = true)
+            val sharedDays = existingDays.intersect(targetDays.toSet())
+            val timeConflict = sharedDays.any { day ->
+                hasTimeOverlap(existing.classTime, classTime, day)
+            }
 
-            if (dayConflict && timeConflict) {
+            if (timeConflict) {
                 subjectDao.deleteSubjectById(existing.id) // Substitui a matéria conflitante
             }
         }
@@ -205,6 +211,47 @@ class AcademicRepository(
             classTime = classTime
         )
         return subjectDao.insertSubject(subject)
+    }
+
+    private fun hasTimeOverlap(timeRangeA: String, timeRangeB: String, dayOfWeek: Int): Boolean {
+        fun ranges(value: String): List<Pair<Int, Int>> {
+            val dayPattern = mapOf(
+                1 to Regex("""\bseg(?:unda)?\b""", RegexOption.IGNORE_CASE),
+                2 to Regex("""\bter(?:ça|ca)?\b""", RegexOption.IGNORE_CASE),
+                3 to Regex("""\bqua(?:rta)?\b""", RegexOption.IGNORE_CASE),
+                4 to Regex("""\bqui(?:nta)?\b""", RegexOption.IGNORE_CASE),
+                5 to Regex("""\bsex(?:ta)?\b""", RegexOption.IGNORE_CASE),
+                6 to Regex("""\bs(?:á|a)b(?:ado)?\b""", RegexOption.IGNORE_CASE)
+            )
+            val dayLabels = Regex("""\b(?:seg(?:unda)?|ter(?:ça|ca)?|qua(?:rta)?|qui(?:nta)?|sex(?:ta)?|s(?:á|a)b(?:ado)?)\b""", RegexOption.IGNORE_CASE)
+            return value.split(Regex("""[|/;\n]+""")).flatMap { segment ->
+                val labels = dayLabels.findAll(segment).mapNotNull { match ->
+                    dayPattern.entries.firstOrNull { (_, pattern) ->
+                        pattern.matches(match.value)
+                    }?.key
+                }.toSet()
+                if (labels.isNotEmpty() && dayOfWeek !in labels) return@flatMap emptyList()
+
+                val minutes = Regex("""(\d{1,2}):(\d{2})""")
+                    .findAll(segment)
+                    .mapNotNull { match ->
+                        val hour = match.groupValues[1].toIntOrNull() ?: return@mapNotNull null
+                        val minute = match.groupValues[2].toIntOrNull() ?: return@mapNotNull null
+                        if (hour !in 0..23 || minute !in 0..59) return@mapNotNull null
+                        hour * 60 + minute
+                    }
+                    .toList()
+                minutes.chunked(2).mapNotNull { pair ->
+                    if (pair.size == 2 && pair[0] < pair[1]) pair[0] to pair[1] else null
+                }
+            }
+        }
+
+        return ranges(timeRangeA).any { (startA, endA) ->
+            ranges(timeRangeB).any { (startB, endB) ->
+                startA < endB && startB < endA
+            }
+        }
     }
 
     suspend fun getRandomExcuse(): String {
@@ -402,21 +449,28 @@ class AcademicRepository(
                             .map { it.trim().lowercase() }
                             .mapNotNull { mapDias[it] }
 
-                        SubjectEntity(
-                            id = prev?.id ?: 0,
-                            code = dto.code,
-                            name = cleanName,
-                            semester = semInt,
-                            dayOfWeek = daysParsed.firstOrNull() ?: 1,
-                            daysOfWeek = daysParsed.joinToString(","),
-                            classesPerDay = dto.classesPerDay,
-                            currentAbsences = prev?.currentAbsences ?: 0,
-                            maxAbsences = dto.maxAbsences,
-                            professor = if (prev == null || prev.professor.isBlank() || prev.professor == "Docente não definido") extractedProf else prev.professor,
-                            classTime = dto.schedule.ifBlank { "07:40 - 11:20" },
-                            isCustomized = prev?.isCustomized ?: false,
-                            isExtension = dto.isExtension
-                        )
+                        if (prev?.isCustomized == true) {
+                            prev.copy(
+                                semester = semInt,
+                                currentAbsences = prev.currentAbsences
+                            )
+                        } else {
+                            SubjectEntity(
+                                id = prev?.id ?: 0,
+                                code = dto.code,
+                                name = cleanName,
+                                semester = semInt,
+                                dayOfWeek = daysParsed.firstOrNull() ?: 1,
+                                daysOfWeek = daysParsed.joinToString(","),
+                                classesPerDay = dto.classesPerDay,
+                                currentAbsences = prev?.currentAbsences ?: 0,
+                                maxAbsences = dto.maxAbsences,
+                                professor = if (prev == null || prev.professor.isBlank() || prev.professor == "Docente não definido") extractedProf else prev.professor,
+                                classTime = dto.schedule.ifBlank { "07:40 - 11:20" },
+                                isCustomized = prev?.isCustomized ?: false,
+                                isExtension = dto.isExtension
+                            )
+                        }
                     }
                     subjectDao.insertSubjects(subjectEntities)
                 }

@@ -14,23 +14,24 @@ Conciliar horários, provas e frequência pode gerar ansiedade e decisões basea
 
 ## Funcionalidades e telas
 
-- **Onboarding:** configuração inicial, apelido e seleção de semestre, com sincronização da grade.
-- **Meu Dia / Minhas Disciplinas:** consulta do veredito, saldo e ações de ajuste de faltas.
+- **Onboarding:** configuração inicial de apelido e semestre. Ao tocar em **Começar**, o app salva as escolhas e sincroniza a grade antes de concluir o onboarding; alarmes e notificações ficam bloqueados até essa conclusão.
+- **Meu Dia / Minhas Disciplinas:** consulta do veredito, saldo e ações de ajuste de faltas. Ao editar uma disciplina, é possível selecionar dias e definir um horário para cada um; os horários são salvos no formato `Seg 07:40 - 11:20 | Ter 09:40 - 13:00`.
 - **Regras de Sobrevivência (Fatec):** resumo de frequência, Exame Final e atestados.
 - **Eventos:** agenda de eventos e datas cadastradas.
-- **Matéria Extra:** seleção de semestre e catálogo por dropdown, além de cadastro manual.
+- **Matéria Extra:** seleção de semestre e catálogo por dropdown, além de cadastro manual com dias e horários definidos individualmente.
 - **Configurações:** semestre, notificações, horário do alarme, horário do preview noturno e sincronização.
 - **Despertador inteligente:** modo manual com horário fixo ou modo automático calculado a partir da primeira aula em um dia letivo futuro, com antecedência configurável. No automático, ignora feriados nacionais consultados na BrasilAPI, feriados estaduais/municipais cadastrados para São Paulo e Diadema e feriados acadêmicos salvos no Room; inclui alarme em tela cheia, soneca de 10 minutos, dispensar e registro das faltas das disciplinas com aula hoje.
 - **Restauração após reinicialização:** `BootReceiver` restaura automaticamente o despertador e o preview noturno ao ligar o Android, reaproveitando as preferências do DataStore e os sons personalizados já salvos.
 - **Sons personalizados:** busca de sons do MyInstants Brasil com Safe Search acadêmico, prévia em streaming e download para cache privado offline; se o áudio personalizado falhar, o alarme tenta tocar o ringtone nativo do Android.
-- **Preview noturno:** notificação “Agenda de Amanhã — SIGA na Cama” com as aulas, o veredito do dia seguinte e o estado do despertador. O horário é configurável (padrão 21:00).
-- **Permissões Android 13+:** no onboarding e nas configurações, o app solicita `POST_NOTIFICATIONS` quando necessário, conforme a política do sistema operacional.
+- **Preview noturno:** notificação “Agenda de Amanhã — SIGA na Cama” com as aulas, o veredito do dia seguinte e o estado do despertador. O horário é configurável (padrão 21:00); horários já passados, inclusive o mesmo minuto, são agendados para o dia seguinte.
+- **Notificações diárias:** o `DailyCheckWorker` aguarda pelo menos 6 horas após o primeiro agendamento e só avalia ou notifica quando o onboarding está concluído e as notificações estão habilitadas.
+- **Permissões Android 13+:** no onboarding e nas configurações, o app solicita `POST_NOTIFICATIONS` quando necessário, conforme a política do sistema operacional. Negar a permissão não impede concluir o onboarding, mas o sistema não exibirá as notificações sem autorização.
 
 ## Requisitos acadêmicos atendidos
 
 - ✅ **Navegação entre telas:** Navigation Compose para onboarding, Meu Dia, eventos e configurações.
 - ✅ **Preferências assíncronas:** DataStore para apelido, semestre, URL da API, notificações, onboarding, alarmes e horário do preview noturno.
-- ✅ **Persistência local:** Room sobre SQLite para disciplinas, eventos, desculpas e edições personalizadas.
+- ✅ **Persistência local:** Room sobre SQLite para disciplinas, eventos, desculpas e edições personalizadas; migrações explícitas preservam os dados ao atualizar o esquema.
 - ✅ **API REST:** Retrofit/Gson para sincronizar o catálogo JSON; em caso de falha, o repositório repõe os dados locais de `DefaultFatecData`.
 - ✅ **Consulta de feriados unificada:** o `AcademicRepository.isAcademicHoliday(date)` combina `eventDao.getHolidaysByDate(date.toString())` com o `HolidayRepository` (BrasilAPI + São Paulo + Diadema) e trata falhas sem bloquear o agendamento. O modo automático pula feriados consultados e feriados institucionais persistidos no Room.
 - ✅ **Sons externos e conectividade:** OkHttp consulta diretamente o MyInstants Brasil; o parser HTML usa UTF-8 e blacklist local. O áudio selecionado é armazenado em cache privado para reprodução offline.

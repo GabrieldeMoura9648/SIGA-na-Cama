@@ -48,6 +48,9 @@ class SettingsViewModel(
     val alarmAutoOffsetMinutes: StateFlow<Int> = preferencesRepository.alarmAutoOffsetMinutesFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 60)
 
+    val isAlarmFallbackWarning: StateFlow<Boolean> = preferencesRepository.isAlarmFallbackWarningFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
     val nightPreviewEnabled: StateFlow<Boolean> = preferencesRepository.nightPreviewEnabledFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 

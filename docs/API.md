@@ -29,7 +29,7 @@ O modal inicia com a busca temática “bom dia” para evitar que o ranking ger
 
 ## Permissões no Android 13+
 
-A partir do Android 13 (`Build.VERSION_CODES.TIRAMISU`), o app exige a permissão `POST_NOTIFICATIONS` para exibir alertas locais e preview. O pedido ocorre no onboarding e em Configurações, antes de permitir que o usuário finalize o processo ou ative notificações/preview. Quando a permissão ainda não foi liberada, o fluxo chama o launcher do sistema e aguarda o resultado antes de continuar.
+A partir do Android 13 (`Build.VERSION_CODES.TIRAMISU`), o app precisa da permissão `POST_NOTIFICATIONS` para exibir alertas locais e preview. O pedido ocorre no fim do onboarding e em Configurações. No onboarding, a escolha de permissão não bloqueia a conclusão: após o retorno do diálogo do sistema, as preferências e a sincronização do semestre são concluídas. Se o usuário negar, o sistema impede a exibição das notificações até a permissão ser concedida; o worker também não avalia nem notifica se as notificações estiverem desativadas nas preferências.
 
 ## Cache de áudio
 

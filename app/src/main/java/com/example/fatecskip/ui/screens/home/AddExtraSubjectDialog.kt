@@ -51,6 +51,8 @@ fun AddExtraSubjectDialog(
     var codeInput by remember { mutableStateOf("") }
     var nameInput by remember { mutableStateOf("") }
     var dayOfWeek by remember { mutableIntStateOf(1) }
+    var selectedDays by remember { mutableStateOf(setOf(1)) }
+    var timesByDay by remember { mutableStateOf(mapOf(1 to "07:40 - 11:20")) }
     var is80Hours by remember { mutableStateOf(true) }
     var isManual by remember { mutableStateOf(false) }
 
@@ -95,6 +97,7 @@ fun AddExtraSubjectDialog(
                             modifier = Modifier.weight(1f)
                         )
                     }
+
                 }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -145,6 +148,11 @@ fun AddExtraSubjectDialog(
                                     codeInput = sub.code
                                     nameInput = sub.name
                                     dayOfWeek = sub.dayOfWeek
+                                    selectedDays = if (sub.daysOfWeek.isNotBlank()) {
+                                        sub.daysOfWeek.split(",").mapNotNull { it.trim().toIntOrNull() }.toSet()
+                                    } else {
+                                        setOf(sub.dayOfWeek)
+                                    }
                                     is80Hours = sub.classesPerDay == 4
                                     isManual = false
                                     expanded = false
@@ -156,9 +164,9 @@ fun AddExtraSubjectDialog(
                                         val existingDays = if (existing.daysOfWeek.isNotBlank()) {
                                             existing.daysOfWeek.split(",").mapNotNull { it.trim().toIntOrNull() }
                                         } else listOf(existing.dayOfWeek)
-                                        val dayConflict = existingDays.intersect(targetDays.toSet()).isNotEmpty()
-                                        val timeConflict = existing.classTime.equals(sub.classTime, ignoreCase = true)
-                                        dayConflict && timeConflict
+                                        existingDays.intersect(targetDays.toSet()).any { day ->
+                                            hasTimeOverlapForDay(existing.classTime, sub.classTime, day)
+                                        }
                                     }
                                     conflictWarning = if (conflicting != null) {
                                         "⚠️ Conflito de horário com ${conflicting.name} (Substituirá na grade)"
@@ -166,6 +174,7 @@ fun AddExtraSubjectDialog(
                                 }
                             )
                         }
+
                         DropdownMenuItem(
                             text = { Text("OUTRO - Digitar manualmente", fontWeight = FontWeight.Bold) },
                             onClick = {
@@ -200,7 +209,7 @@ fun AddExtraSubjectDialog(
                 )
 
                 Text(
-                    text = "Dia da Semana da Aula:",
+                    text = if (isManual) "Dias da Semana da Aula:" else "Dia da Semana da Aula:",
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -213,13 +222,46 @@ fun AddExtraSubjectDialog(
                     ) {
                         rowDays.forEach { (dInt, dName) ->
                             FilterChip(
-                                selected = dayOfWeek == dInt,
-                                onClick = { dayOfWeek = dInt },
+                                selected = selectedDays.contains(dInt),
+                                onClick = {
+                                    if (isManual) {
+                                        selectedDays = if (selectedDays.contains(dInt)) {
+                                            if (selectedDays.size > 1) selectedDays - dInt else selectedDays
+                                        } else {
+                                            selectedDays + dInt
+                                        }
+                                        if (dInt in selectedDays && timesByDay[dInt] == null) {
+                                            timesByDay = timesByDay + (dInt to (timesByDay.values.firstOrNull() ?: "07:40 - 11:20"))
+                                        }
+                                        dayOfWeek = selectedDays.minOrNull() ?: dayOfWeek
+                                    } else {
+                                        dayOfWeek = dInt
+                                        selectedDays = setOf(dInt)
+                                    }
+                                },
                                 label = { Text(dName.take(3)) },
                                 modifier = Modifier.weight(1f),
                                 enabled = isManual || selectedSubjectCode == null
                             )
                         }
+                    }
+                }
+
+                if (isManual) {
+                    Text(
+                        "Horários por dia:",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    days.filter { it.first in selectedDays }.forEach { (day, dayName) ->
+                        OutlinedTextField(
+                            value = timesByDay[day].orEmpty(),
+                            onValueChange = { timesByDay = timesByDay + (day to it) },
+                            label = { Text(dayName) },
+                            placeholder = { Text("07:40 - 11:20") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
                     }
                 }
 
@@ -264,7 +306,12 @@ fun AddExtraSubjectDialog(
                                 semester = searchSemester,
                                 dayOfWeek = dayOfWeek,
                                 classesPerDay = classes,
-                                maxAbsences = maxAbs
+                                maxAbsences = maxAbs,
+                                daysOfWeek = selectedDays.sorted().joinToString(","),
+                                classTime = selectedDays.sorted().joinToString(" | ") { day ->
+                                    val label = days.first { it.first == day }.second.take(3)
+                                    "$label ${timesByDay[day].orEmpty().trim()}"
+                                }
                             )
                         } else {
                             val sub = availableSubjects.find { it.code == selectedSubjectCode }
@@ -275,7 +322,10 @@ fun AddExtraSubjectDialog(
                         onDismiss()
                     }
                 },
-                enabled = nameInput.isNotBlank() && (selectedSubjectCode != null || isManual),
+                enabled = nameInput.isNotBlank() &&
+                    (selectedSubjectCode != null || isManual) &&
+                    (!isManual || (selectedDays.isNotEmpty() &&
+                        selectedDays.all { isValidTimeRange(timesByDay[it].orEmpty()) })),
                 shape = RoundedCornerShape(10.dp)
             ) {
                 Text("Adicionar")
@@ -290,4 +340,52 @@ fun AddExtraSubjectDialog(
             }
         }
     )
+}
+
+private fun isValidTimeRange(value: String): Boolean {
+    val match = Regex("""^\s*(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})\s*$""").matchEntire(value)
+        ?: return false
+    val startHour = match.groupValues[1].toIntOrNull() ?: return false
+    val startMinute = match.groupValues[2].toIntOrNull() ?: return false
+    val endHour = match.groupValues[3].toIntOrNull() ?: return false
+    val endMinute = match.groupValues[4].toIntOrNull() ?: return false
+    val start = startHour * 60 + startMinute
+    val end = endHour * 60 + endMinute
+    return startHour in 0..23 && endHour in 0..23 &&
+        startMinute in 0..59 && endMinute in 0..59 && start < end
+}
+
+private fun hasTimeOverlapForDay(firstSchedule: String, secondSchedule: String, dayOfWeek: Int): Boolean {
+    val dayPatterns = mapOf(
+        1 to Regex("""\bseg(?:unda)?\b""", RegexOption.IGNORE_CASE),
+        2 to Regex("""\bter(?:ça|ca)?\b""", RegexOption.IGNORE_CASE),
+        3 to Regex("""\bqua(?:rta)?\b""", RegexOption.IGNORE_CASE),
+        4 to Regex("""\bqui(?:nta)?\b""", RegexOption.IGNORE_CASE),
+        5 to Regex("""\bsex(?:ta)?\b""", RegexOption.IGNORE_CASE),
+        6 to Regex("""\bs(?:á|a)b(?:ado)?\b""", RegexOption.IGNORE_CASE)
+    )
+    fun ranges(schedule: String): List<Pair<Int, Int>> =
+        schedule.split(Regex("""[|/;\n]+""")).flatMap { segment ->
+            val labels = dayPatterns.filterValues { it.containsMatchIn(segment) }.keys
+            if (labels.isNotEmpty() && dayOfWeek !in labels) return@flatMap emptyList()
+
+            val minutes = Regex("""(\d{1,2}):(\d{2})""")
+                .findAll(segment)
+                .mapNotNull { match ->
+                    val hour = match.groupValues[1].toIntOrNull() ?: return@mapNotNull null
+                    val minute = match.groupValues[2].toIntOrNull() ?: return@mapNotNull null
+                    if (hour !in 0..23 || minute !in 0..59) return@mapNotNull null
+                    hour * 60 + minute
+                }
+                .toList()
+            minutes.chunked(2).mapNotNull { pair ->
+                if (pair.size == 2 && pair[0] < pair[1]) pair[0] to pair[1] else null
+            }
+        }
+
+    return ranges(firstSchedule).any { (startA, endA) ->
+        ranges(secondSchedule).any { (startB, endB) ->
+            startA < endB && startB < endA
+        }
+    }
 }

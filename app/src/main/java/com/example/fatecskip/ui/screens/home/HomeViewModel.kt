@@ -73,7 +73,9 @@ class HomeViewModel(
         semester: Int,
         dayOfWeek: Int,
         classesPerDay: Int,
-        maxAbsences: Int
+        maxAbsences: Int,
+        daysOfWeek: String = "",
+        classTime: String = "07:40 - 11:20"
     ) {
         viewModelScope.launch {
             repository.addCustomSubject(
@@ -82,7 +84,9 @@ class HomeViewModel(
                 semester = semester,
                 dayOfWeek = dayOfWeek,
                 classesPerDay = classesPerDay,
-                maxAbsences = maxAbsences
+                maxAbsences = maxAbsences,
+                daysOfWeek = daysOfWeek,
+                classTime = classTime
             )
             _userFeedback.value = "Matéria de DP adicionada com sucesso no ${semester}º semestre!"
             if (_verdict.value != null) {

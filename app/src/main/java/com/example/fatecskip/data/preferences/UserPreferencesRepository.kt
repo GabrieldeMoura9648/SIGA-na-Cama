@@ -36,6 +36,7 @@ class UserPreferencesRepository(private val context: Context) {
         val KEY_CUSTOM_ALARM_NAME = stringPreferencesKey("custom_alarm_name")
         val KEY_ALARM_MODE = stringPreferencesKey("alarm_mode")
         val KEY_ALARM_AUTO_OFFSET_MINUTES = intPreferencesKey("alarm_auto_offset_minutes")
+        val KEY_ALARM_FALLBACK_WARNING = booleanPreferencesKey("alarm_fallback_warning")
 
         const val DEFAULT_SEMESTER = 1
         const val DEFAULT_NICKNAME = "Guerreiro da Fatec"
@@ -155,6 +156,12 @@ class UserPreferencesRepository(private val context: Context) {
             preferences[KEY_ALARM_AUTO_OFFSET_MINUTES] ?: 60
         }
 
+    val isAlarmFallbackWarningFlow: Flow<Boolean> = dataStore.data
+        .catch { exception ->
+            if (exception is IOException) emit(emptyPreferences()) else throw exception
+        }
+        .map { preferences -> preferences[KEY_ALARM_FALLBACK_WARNING] ?: false }
+
     suspend fun setOnboardingCompleted(completed: Boolean = true) {
         dataStore.edit { preferences ->
             preferences[KEY_ONBOARDING_COMPLETED] = completed
@@ -241,6 +248,12 @@ class UserPreferencesRepository(private val context: Context) {
     suspend fun setAlarmAutoOffsetMinutes(minutes: Int) {
         dataStore.edit { preferences ->
             preferences[KEY_ALARM_AUTO_OFFSET_MINUTES] = minutes
+        }
+    }
+
+    suspend fun setAlarmFallbackWarning(warning: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[KEY_ALARM_FALLBACK_WARNING] = warning
         }
     }
 }

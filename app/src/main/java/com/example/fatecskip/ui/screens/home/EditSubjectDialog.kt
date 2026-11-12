@@ -34,7 +34,6 @@ fun EditSubjectDialog(
     onDeleteSubject: (Long) -> Unit = {}
 ) {
     var professor by remember { mutableStateOf(if (subject.professor == "Docente não definido") "" else subject.professor) }
-    var classTime by remember { mutableStateOf(subject.classTime) }
     var absences by remember { mutableIntStateOf(subject.currentAbsences) }
 
     // Parse selected days
@@ -53,6 +52,18 @@ fun EditSubjectDialog(
         5 to "Sexta",
         6 to "Sábado"
     )
+    val dayAbbreviations = mapOf(
+        1 to "Seg",
+        2 to "Ter",
+        3 to "Qua",
+        4 to "Qui",
+        5 to "Sex",
+        6 to "Sáb"
+    )
+    val initialSchedule = remember(subject.id, subject.classTime) {
+        parseSubjectSchedule(subject.classTime, selectedDays)
+    }
+    var timesByDay by remember(subject.id) { mutableStateOf(initialSchedule) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -74,15 +85,6 @@ fun EditSubjectDialog(
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                OutlinedTextField(
-                    value = classTime,
-                    onValueChange = { classTime = it },
-                    label = { Text("Horário") },
-                    placeholder = { Text("Ex: 19:00 - 22:30") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-
                 Text("Dias da Semana:", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelMedium)
                 // Usando FlowRow seria melhor, mas para compatibilidade simples com M3 faremos Wrap:
                 // Mas como não podemos usar experimental do FlowRow sem complicação, vamos agrupar em Rows:
@@ -94,10 +96,13 @@ fun EditSubjectDialog(
                                 FilterChip(
                                     selected = selectedDays.contains(dInt),
                                     onClick = {
-                                        selectedDays = if (selectedDays.contains(dInt)) {
-                                            selectedDays - dInt
+                                        if (selectedDays.contains(dInt)) {
+                                            if (selectedDays.size > 1) selectedDays = selectedDays - dInt
                                         } else {
-                                            selectedDays + dInt
+                                            selectedDays = selectedDays + dInt
+                                            if (timesByDay[dInt] == null) {
+                                                timesByDay = timesByDay + (dInt to (timesByDay.values.firstOrNull() ?: "07:40 - 11:20"))
+                                            }
                                         }
                                     },
                                     label = { Text(dName.take(3)) }
@@ -105,6 +110,22 @@ fun EditSubjectDialog(
                             }
                         }
                     }
+                }
+
+                Text(
+                    "Horários por dia:",
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.labelMedium
+                )
+                allDays.filter { it.first in selectedDays }.forEach { (day, dayName) ->
+                    OutlinedTextField(
+                        value = timesByDay[day].orEmpty(),
+                        onValueChange = { timesByDay = timesByDay + (day to it) },
+                        label = { Text(dayName) },
+                        placeholder = { Text("07:40 - 11:20") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
                 }
 
                 Text("Ajuste Fino de Faltas:", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelMedium)
@@ -147,9 +168,14 @@ fun EditSubjectDialog(
         confirmButton = {
             Button(
                 onClick = {
-                    val finalDays = selectedDays.joinToString(",")
-                    onSave(subject.id, professor, classTime, finalDays, absences)
+                    val finalDays = selectedDays.sorted().joinToString(",")
+                    val schedule = selectedDays.sorted().joinToString(" | ") { day ->
+                        "${dayAbbreviations[day]} ${timesByDay[day].orEmpty().trim()}"
+                    }
+                    onSave(subject.id, professor, schedule, finalDays, absences)
                 },
+                enabled = selectedDays.isNotEmpty() &&
+                    selectedDays.all { isValidTimeRange(timesByDay[it].orEmpty()) },
                 shape = RoundedCornerShape(10.dp)
             ) {
                 Text("Salvar")
@@ -164,4 +190,56 @@ fun EditSubjectDialog(
             }
         }
     )
+}
+
+private fun isValidTimeRange(value: String): Boolean {
+    val match = Regex("""^\s*(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})\s*$""").matchEntire(value)
+        ?: return false
+    val startHour = match.groupValues[1].toIntOrNull() ?: return false
+    val startMinute = match.groupValues[2].toIntOrNull() ?: return false
+    val endHour = match.groupValues[3].toIntOrNull() ?: return false
+    val endMinute = match.groupValues[4].toIntOrNull() ?: return false
+    val start = startHour * 60 + startMinute
+    val end = endHour * 60 + endMinute
+    return startHour in 0..23 && endHour in 0..23 &&
+        startMinute in 0..59 && endMinute in 0..59 && start < end
+}
+
+private fun parseSubjectSchedule(
+    classTime: String,
+    selectedDays: Set<Int>
+): Map<Int, String> {
+    val result = mutableMapOf<Int, String>()
+    val dayPatterns = mapOf(
+        1 to Regex("""\bseg(?:unda)?\b""", RegexOption.IGNORE_CASE),
+        2 to Regex("""\bter(?:ça|ca)?\b""", RegexOption.IGNORE_CASE),
+        3 to Regex("""\bqua(?:rta)?\b""", RegexOption.IGNORE_CASE),
+        4 to Regex("""\bqui(?:nta)?\b""", RegexOption.IGNORE_CASE),
+        5 to Regex("""\bsex(?:ta)?\b""", RegexOption.IGNORE_CASE),
+        6 to Regex("""\bs(?:á|a)b(?:ado)?\b""", RegexOption.IGNORE_CASE)
+    )
+    classTime.split(Regex("""[|/;\n]+""")).forEach { segment ->
+        val day = dayPatterns.entries.firstOrNull { (_, pattern) ->
+            pattern.containsMatchIn(segment)
+        }?.key
+        val times = Regex("""\d{1,2}:\d{2}\s*-\s*\d{1,2}:\d{2}""")
+            .find(segment)?.value
+        if (day != null && times != null) result[day] = times
+    }
+
+    val unlabelledRanges = Regex("""\d{1,2}:\d{2}\s*-\s*\d{1,2}:\d{2}""")
+        .findAll(classTime)
+        .toList()
+    if (result.isEmpty() && unlabelledRanges.size == selectedDays.size) {
+        selectedDays.sorted().forEachIndexed { index, day ->
+            result[day] = unlabelledRanges[index].value
+        }
+    }
+
+    val fallbackTime = Regex("""\d{1,2}:\d{2}\s*-\s*\d{1,2}:\d{2}""")
+        .find(classTime)?.value ?: "07:40 - 11:20"
+    selectedDays.forEach { day ->
+        if (result[day] == null) result[day] = fallbackTime
+    }
+    return result
 }

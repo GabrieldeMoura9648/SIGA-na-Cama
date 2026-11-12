@@ -13,7 +13,6 @@ import kotlinx.coroutines.withTimeoutOrNull
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.util.Calendar
-import java.util.regex.Pattern
 
 object AlarmScheduler {
 
@@ -51,19 +50,16 @@ object AlarmScheduler {
                 val semester = prefs.selectedSemesterFlow.first()
                 val subjects = repo.getSubjectsBySemesterList(semester)
                 val offset = prefs.alarmAutoOffsetMinutesFlow.first()
-                val startTimePattern = Pattern.compile("""(\d{1,2}):(\d{2})""")
 
                 val firstClassMinutesByDay = (1..7).mapNotNull { day ->
                     val earliestStart = subjects.asSequence()
                         .filter { it.isClassOnDay(day) }
                         .mapNotNull { subject ->
-                            val match = startTimePattern.matcher(subject.classTime.substringBefore("-"))
-                            if (!match.find()) return@mapNotNull null
-                            val hourText = match.group(1) ?: return@mapNotNull null
-                            val minuteText = match.group(2) ?: return@mapNotNull null
-                            val classHour = hourText.toIntOrNull() ?: return@mapNotNull null
-                            val classMinute = minuteText.toIntOrNull() ?: return@mapNotNull null
-                            if (classHour !in 0..23 || classMinute !in 0..59) return@mapNotNull null
+                            val (classHour, classMinute) = extractStartTimeForDay(
+                                subject.classTime,
+                                day,
+                                subject.daysOfWeek
+                            ) ?: return@mapNotNull null
                             classHour * 60 + classMinute
                         }
                         .minOrNull()
@@ -97,6 +93,7 @@ object AlarmScheduler {
                     break
                 }
 
+                prefs.setAlarmFallbackWarning(false)
                 if (selectedAutoAlarm != null) {
                     nextAlarmDate = selectedAutoAlarm.toLocalDate()
                     hour = selectedAutoAlarm.hour
@@ -110,6 +107,7 @@ object AlarmScheduler {
                 throw exception
             } catch (exception: Exception) {
                 Log.e(TAG, "Não foi possível calcular o próximo dia letivo; usando o horário manual configurado.", exception)
+                prefs.setAlarmFallbackWarning(true)
             }
         }
         
@@ -117,6 +115,55 @@ object AlarmScheduler {
         if (!nextAlarm.isAfter(now)) nextAlarm = nextAlarm.plusDays(1)
         val triggerAtMillis = nextAlarm.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
         return schedule(context, TYPE_DAILY, REQUEST_DAILY_ALARM, triggerAtMillis)
+    }
+
+    fun extractStartTimeForDay(classTime: String, dayOfWeek: Int): Pair<Int, Int>? =
+        extractStartTimeForDay(classTime, dayOfWeek, "")
+
+    private fun extractStartTimeForDay(
+        classTime: String,
+        dayOfWeek: Int,
+        daysOfWeek: String
+    ): Pair<Int, Int>? {
+        val dayNames = mapOf(
+            1 to Regex("""\bseg(?:unda)?\b""", RegexOption.IGNORE_CASE),
+            2 to Regex("""\bter(?:ça|ca)?\b""", RegexOption.IGNORE_CASE),
+            3 to Regex("""\bqua(?:rta)?\b""", RegexOption.IGNORE_CASE),
+            4 to Regex("""\bqui(?:nta)?\b""", RegexOption.IGNORE_CASE),
+            5 to Regex("""\bsex(?:ta)?\b""", RegexOption.IGNORE_CASE),
+            6 to Regex("""\bs(?:á|a)b(?:ado)?\b""", RegexOption.IGNORE_CASE),
+            7 to Regex("""\bdom(?:ingo)?\b""", RegexOption.IGNORE_CASE)
+        )
+        val segments = classTime.split(Regex("""[|/;\n]+""")).map(String::trim).filter(String::isNotEmpty)
+        val labeledSegment = segments.firstOrNull { segment ->
+            dayNames[dayOfWeek]?.containsMatchIn(segment) == true
+        }
+        if (labeledSegment != null) {
+            return parseStartTime(labeledSegment)
+        }
+
+        val ranges = Regex("""(\d{1,2}):(\d{2})""").findAll(classTime).toList()
+        val rangeCount = ranges.size / 2
+        if (rangeCount == 1) return parseStartTime(classTime)
+
+        val scheduledDays = daysOfWeek.split(",").mapNotNull { it.trim().toIntOrNull() }
+        val dayIndex = scheduledDays.indexOf(dayOfWeek)
+        if (rangeCount > 1 && dayIndex in 0 until rangeCount) {
+            val startMatch = ranges[dayIndex * 2]
+            val hour = startMatch.groupValues[1].toIntOrNull() ?: return null
+            val minute = startMatch.groupValues[2].toIntOrNull() ?: return null
+            if (hour !in 0..23 || minute !in 0..59) return null
+            return hour to minute
+        }
+        return null
+    }
+
+    private fun parseStartTime(value: String): Pair<Int, Int>? {
+        val match = Regex("""(\d{1,2}):(\d{2})""").find(value) ?: return null
+        val hour = match.groupValues[1].toIntOrNull() ?: return null
+        val minute = match.groupValues[2].toIntOrNull() ?: return null
+        if (hour !in 0..23 || minute !in 0..59) return null
+        return hour to minute
     }
 
 

@@ -102,6 +102,7 @@ fun SettingsScreen(
     val nightPreviewMinute by viewModel.nightPreviewMinute.collectAsState()
     val alarmMode by viewModel.alarmMode.collectAsState()
     val alarmAutoOffsetMinutes by viewModel.alarmAutoOffsetMinutes.collectAsState()
+    val isAlarmFallbackWarning by viewModel.isAlarmFallbackWarning.collectAsState()
     val apiUrl by viewModel.apiUrl.collectAsState()
     val isSyncing by viewModel.isSyncing.collectAsState()
     val feedbackMessage by viewModel.feedbackMessage.collectAsState()
@@ -443,6 +444,17 @@ fun SettingsScreen(
                                     }
                                 }
                             }
+                        }
+
+                        if (isAlarmFallbackWarning) {
+                            Text(
+                                "O modo automático recorreu temporariamente ao horário manual porque não foi possível calcular a próxima aula.",
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 8.dp),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.error
+                            )
                         }
 
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !canScheduleExactAlarms) {

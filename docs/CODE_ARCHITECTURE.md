@@ -27,8 +27,10 @@ Este guia foi feito para explicar o código para o professor sem enrolação. Em
 
 ### 3. SQLite / Room Database (Persistência de Dados)
 * **A ideia simples:** É o "Caderno Oficial" onde ficam as tabelas pesadas e estruturadas: as matérias do semestre (`subjects`), os eventos/provas (`academic_events`) e as desculpas (`excuses`).
-* **Bloqueio de Conflito de Horário (Art. 26 - Acomodação de Horários):** Se o aluno puxar uma matéria atrasada (DP) ou adiantada de outro semestre, o banco verifica a intersecção de `daysOfWeek` e `classTime`. Havendo conflito, o app aplica a política de substituição (uma matéria sai para a outra entrar), garantindo que não existam aulas duplicadas no mesmo horário!
-* **O toque de mestre (diferencial):** Criamos a coluna `isCustomized`. Se o aluno editar o nome do professor ou adicionar faltas, quando a API sincronizar de novo, o banco protege a edição do aluno e não sobrescreve!
+* **Horários por dia:** O diálogo `EditSubjectDialog` permite selecionar os dias da disciplina e informar um intervalo para cada dia. A grade grava `classTime` como blocos identificados pelo dia, por exemplo `Seg 07:40 - 11:20 | Ter 09:40 - 13:00`; o cadastro manual de matéria extra também permite essa configuração.
+* **Bloqueio de conflito de horário:** Ao incluir uma matéria de outro semestre, o repositório verifica os dias em comum e compara os intervalos daquele dia em minutos. Se houver sobreposição, aplica a política de substituição da grade.
+* **O toque de mestre (diferencial):** A coluna `isCustomized` marca edições do usuário. A sincronização da API preserva o nome, os dias, os horários, o limite de faltas e a quantidade diária de aulas da disciplina personalizada, além dos demais dados armazenados.
+* **Migrações Room:** `AppDatabase` registra as migrações 1→2 e 2→3 para adicionar colunas sem descartar a grade e os dados salvos; o fallback destrutivo fica restrito a downgrade.
 * **Onde abrir para mostrar ao professor:**
   * Banco: acesse na pasta `app/src/main/java/com/example/fatecskip/data/local/AppDatabase.kt`
   * Comandos SQL: acesse na pasta `app/src/main/java/com/example/fatecskip/data/local/SubjectDao.kt`
@@ -38,7 +40,7 @@ Este guia foi feito para explicar o código para o professor sem enrolação. Em
 
 ### 4. APIs REST (Consumo de Serviços Externos com Retrofit)
 * **A ideia simples:** O app busca na nuvem (GitHub Raw JSON) a grade acadêmica, eventos do calendário institucional e lista de desculpas. Uma integração separada consulta os feriados nacionais na BrasilAPI.
-* **Auto-Sync + Smart Merge:** Ao abrir o app (dentro do `HomeViewModel.init`), o Retrofit bate na nuvem em *background*. Ele funde (merge) as novidades (como troca de professores ou horários divididos na semana) para o SQLite, mas respeita a flag `isCustomized` limpando apenas matérias que foram mescladas ou deixaram de existir no catálogo da Fatec. Tudo automático sem o usuário precisar clicar num botão de atualizar.
+* **Sincronização inicial + Smart Merge:** Ao tocar em **Começar** no fim do onboarding, o app salva apelido e semestre e sincroniza a grade escolhida antes de marcar o onboarding como concluído e navegar para a Home. A `HomeViewModel` também mantém um *auto-sync* em background ao ser criada. A sincronização funde novidades (como troca de professores ou horários divididos na semana) para o SQLite, respeitando a flag `isCustomized`.
 * **O toque de mestre (Offline-First):** E se a internet da Fatec cair na hora da apresentação? O `AcademicRepository` tenta buscar na API via `Retrofit`; se falhar, ele lê instantaneamente a grade oficial salva em memória via `DefaultFatecData`. O app nunca quebra!
 * **Onde abrir para mostrar ao professor:**
   * Interface acadêmica: acesse `app/src/main/java/com/example/fatecskip/data/remote/FatecApiService.kt`
@@ -52,9 +54,10 @@ Este guia foi feito para explicar o código para o professor sem enrolação. Em
 * **A ideia simples:** Fizemos em dose dupla para garantir nota máxima!
   1. **Notificação na Barra de Status (`WorkManager`):** O `DailyCheckWorker` avalia o dia seguinte. No preview noturno, cria uma notificação com o título **“Agenda de Amanhã — SIGA na Cama”** e um corpo com as disciplinas e horários, o resumo de frequência e o estado do despertador.
   2. **Despertador de Verdade (`AlarmManager`):** Acende a tela bloqueada do celular na hora exata com o resumo da grade e o botão **"🛌 Vou Faltar Hoje (+Falta)"**, que já soma a falta direto no SQLite e deixa você voltar a dormir.
-* **Preview noturno configurável:** `UserPreferencesRepository` persiste hora e minuto separados, com padrão 21:00. `SettingsScreen` usa um `TimePickerDialog`; ao salvar, `SettingsViewModel` atualiza a preferência e reagenda o preview se ele estiver ativo. `AlarmScheduler.scheduleNightPreview()` calcula o próximo disparo no horário escolhido, hoje ou no dia seguinte, conforme o horário atual. Ao disparar, `AlarmReceiver` agenda o próximo preview e encaminha a avaliação ao `DailyCheckWorker`.
-* **Restauração após boot:** `BootReceiver` escuta `ACTION_BOOT_COMPLETED`, lê as preferências do DataStore e reprograma o alarme e o preview quando o aparelho reinicia. Isso mantém os agendamentos mesmo sem interação do usuário após um reboot.
-* **Permissões do sistema:** no Android 13+, o app solicita `POST_NOTIFICATIONS` no onboarding e no fluxo de configurações antes de disparar notificações; isso é controlado por `rememberLauncherForActivityResult` nos composables correspondentes.
+* **Proteção do onboarding:** `DailyCheckWorker` retorna sucesso sem avaliar o dia ou notificar enquanto o onboarding não estiver concluído ou as notificações estiverem desativadas. O trabalho periódico recebe atraso inicial de 6 horas. A sincronização inicial do semestre acontece no botão final do onboarding, antes de marcá-lo como concluído.
+* **Preview noturno configurável:** `UserPreferencesRepository` persiste hora e minuto separados, com padrão 21:00. `SettingsScreen` usa um `TimePickerDialog`; ao salvar, `SettingsViewModel` atualiza a preferência e reagenda o preview se ele estiver ativo. `AlarmScheduler.scheduleNightPreview()` só agenda após a conclusão do onboarding e sempre escolhe um horário futuro: se o horário de hoje já passou ou é o mesmo minuto, agenda para o dia seguinte. Ao disparar, `AlarmReceiver` agenda o próximo preview e encaminha a avaliação ao `DailyCheckWorker`, que aplica as mesmas verificações de onboarding e notificações.
+* **Restauração após boot:** `BootReceiver` escuta `ACTION_BOOT_COMPLETED`, lê as preferências do DataStore e restaura os agendamentos habilitados quando o aparelho reinicia. O preview noturno só é restaurado após a conclusão do onboarding.
+* **Permissões do sistema:** no Android 13+, o app solicita `POST_NOTIFICATIONS` no onboarding e em Configurações. A conclusão do onboarding continua mesmo se a permissão for negada; sem autorização do sistema, as notificações não podem ser exibidas.
 * **Onde abrir para mostrar ao professor:**
   * Criação da Notificação: acesse na pasta `app/src/main/java/com/example/fatecskip/worker/NotificationHelper.kt`
   * Trabalho em 2º plano: acesse na pasta `app/src/main/java/com/example/fatecskip/worker/DailyCheckWorker.kt`
@@ -82,8 +85,10 @@ Detalhes das URLs, parser e blacklist estão em [`API.md`](API.md); o ciclo de c
 
 * **Manual (Fixo):** usa a hora e o minuto configurados pelo aluno.
 * **Automático:** obtém o semestre selecionado e consulta as disciplinas por meio do `AcademicRepository`. Procura o próximo horário em um dia futuro com aula, escolhe o início mais cedo e subtrai o `alarmAutoOffsetMinutes` configurado. O padrão do offset é 60 minutos.
+* **Horários por dia:** `AlarmScheduler` lê o bloco correspondente ao dia da semana, como `Seg` ou `Ter`, e usa o início desse intervalo. Um horário sem dia indicado continua sendo usado como horário geral.
 * **Feriados:** antes de agendar, consulta `HolidayRepository`, que combina feriados nacionais da BrasilAPI com 9 de julho (São Paulo) e 8 de dezembro (Diadema). Datas reconhecidas como feriado são puladas. Os feriados e folgas próprios do calendário Fatec, como Carnaval e Dia do Professor, permanecem no calendário acadêmico sincronizado; eles são usados na agenda e nas notificações do `DailyCheckWorker`.
-* **Falha na consulta:** se a BrasilAPI não puder validar um candidato, o scheduler cancela o alarme diário automático e registra o erro, em vez de agendar uma data sem validação. O modo manual permanece independente do serviço.
+* **Falha na consulta de feriados:** se a consulta externa falhar, `AcademicRepository.isAcademicHoliday()` registra a falha e segue sem marcar a data como feriado; isso não aciona o fallback manual. O fallback do horário manual é usado quando uma exceção interrompe o cálculo automático do alarme.
+* **Fallback do cálculo automático:** se ocorrer uma exceção durante o cálculo, o alarme usa temporariamente a hora manual configurada. A preferência `KEY_ALARM_FALLBACK_WARNING` registra essa condição e Configurações exibe um aviso; o aviso é limpo quando um cálculo automático é concluído.
 * **Sem aula futura:** após procurar até 366 dias, se nenhuma data letiva puder ser agendada, o alarme diário automático é cancelado.
 * **Precisão:** usa `setExactAndAllowWhileIdle` quando permitido pelo Android e recorre a `setAndAllowWhileIdle` quando a permissão de alarme exato não está disponível.
 

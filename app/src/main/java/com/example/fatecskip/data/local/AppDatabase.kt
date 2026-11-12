@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.fatecskip.data.local.entities.EventEntity
 import com.example.fatecskip.data.local.entities.ExcuseEntity
@@ -28,6 +29,21 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun excuseDao(): ExcuseDao
 
     companion object {
+        private val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE subjects ADD COLUMN daysOfWeek TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE subjects ADD COLUMN isCustomized INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE subjects ADD COLUMN isExtension INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
+        private val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE subjects ADD COLUMN professor TEXT NOT NULL DEFAULT 'Docente não definido'")
+                db.execSQL("ALTER TABLE subjects ADD COLUMN classTime TEXT NOT NULL DEFAULT '19:00 - 22:30'")
+            }
+        }
+
         @Volatile
         private var INSTANCE: AppDatabase? = null
 
@@ -38,7 +54,8 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "fatec_skip_database"
                 )
-                    .fallbackToDestructiveMigration()
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                    .fallbackToDestructiveMigrationOnDowngrade()
                     .addCallback(object : Callback() {
                         override fun onCreate(db: SupportSQLiteDatabase) {
                             super.onCreate(db)
