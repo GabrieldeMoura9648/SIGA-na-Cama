@@ -1,0 +1,93 @@
+SIGA na Cama - Roteiro de apresentação ao vivo
+Tempo estimado: 5 a 6 minutos
+
+Apresentadores: 4 integrantes
+Tema: "Será que hoje eu posso continuar dormindo ou vou reprovar por falta?"
+
+
+[1) Integrante 1 - A dor do cotidiano, navegação e DataStore]
+
+[O que falar]
+"Boa tarde, professor e turma! A gente criou o SIGA na Cama para resolver um problema muito real: o aluno chega às 6h da manhã, olha a grade e pensa: ‘Será que hoje eu posso continuar dormindo ou vou reprovar por falta?’ Esse é o dilema do semestre."
+
+"A proposta do app é simples, mas técnica: ele ajuda o aluno a acompanhar disciplinas, eventos, faltas e despertar no momento certo sem virar um personagem de filme de terror acadêmico."
+
+"Na parte de navegação, usamos Navigation Compose com NavHost e rememberNavController. A tela inicial é o Onboarding, depois o Home, a Agenda/Eventos e, por fim, Configurações. A barra inferior foi montada com NavigationBar, então o usuário faz a transição entre fluxos sem perder contexto."
+
+"Além disso, usamos DataStore para persistir apelido, semestre escolhido e o estado do onboarding. Isso significa que o app salva as preferências do aluno mesmo fechando e abrindo o app depois. Em outras palavras: se ele configurou a vida, o app lembra da vida dele."
+
+[O que fazer na tela do celular ao vivo]
+- Abrir o app e mostrar a tela de onboarding.
+- Mostrar os subtítulos bem-humorados dos semestres, por exemplo: “4º Semestre: Milagreiro da nota 6”.
+- Digitar um apelido e escolher o semestre.
+- Avançar para a Home e mostrar que o fluxo está funcionando.
+- Fechar o app rapidamente e reabrir para demonstrar que o apelido e o estado da onboarding continuam salvos no DataStore.
+
+
+[2) Integrante 2 - SQLite (Room), grade personalizada e “Game Over”]
+
+[O que falar]
+"A parte mais séria do projeto é a persistência local. A grade do aluno e as faltas ficam no SQLite via Room. A estrutura usa entidades, DAO e fluxo reativo com Flow, então as mudanças na tela atualizam em tempo real sem a pessoa precisar reiniciar nada."
+
+"A gente também trata a grade como algo personalizado: disciplina por dia da semana, horário diferente para cada dia, professor, semestre e controle de faltas. Isso é importante porque a vida real do estudante não é um cronograma perfeito: a terça e a quinta podem ser um desastre diferente da segunda."
+
+"Quando a falta chega ao limite, o app dispara o alerta estilo game retrô: ‘GAME OVER - Você foi reprovado por falta!’ ou ‘Missão Falhada: O sono venceu o semestre’. É o momento em que o app deixa claro que a lógica não é só visual; ela é acadêmica e existe para tomar decisões importantes."
+
+"A parte de migrações também foi pensada com cuidado. O Room usa migrações seguras para adicionar colunas sem apagar dados do aluno. Isso evita que a frequência e a grade do estudante desapareçam quando o app é atualizado."
+
+[O que fazer na tela do celular ao vivo]
+- Abrir a Home.
+- Mostrar a lista de disciplinas e o contador de faltas.
+- Editar uma disciplina e alterar horários diferentes para dias diferentes da semana.
+- Mostrar que o app preserva as disciplinas e os horários do aluno.
+- Acionar um cenário de ausência / limite de faltas e mostrar a mensagem “GAME OVER - Você foi reprovado por falta!”.
+
+
+[3) Integrante 3 - API REST, calendário de feriados e modo offline]
+
+[O que falar]
+"Esse app também sabe que não é só a faculdade: a vida acadêmica tem calendário, feriado e caos. Por isso, a gente integra APIs REST com Retrofit e Gson. A API acadêmica traz os dados de disciplinas e eventos, e a BrasilAPI traz os feriados nacionais. A aplicação também soma os feriados de São Paulo e Diadema, porque a rotina do aluno não respeita a teoria do calendário ideal."
+
+"O ponto mais importante: o app bloqueia o registro de faltas em feriados, porque o aluno não pode “perder” uma aula em um dia em que a instituição não está funcionando. Além disso, ele preserva edições manuais do usuário enquanto sincroniza os dados, sem apagar o que o aluno já ajustou."
+
+"E se o celular ficar sem internet? O app continua funcionando. Ele tem fallback offline, então as informações já salvas ficam disponíveis mesmo sem rede. Isso é o que a gente chama de estratégia robusta e realista para um app de rotina escolar."
+
+[O que fazer na tela do celular ao vivo]
+- Abrir a aba de Eventos/Feriados.
+- Mostrar a lista de feriados e eventos carregados pela API.
+- Demonstrar que a tela respeita feriados acadêmicos e não registra faltas em datas não letivas.
+- Mostrar que o app continua funcionando mesmo sem conexão, mantendo dados locais acessíveis.
+
+
+[4) Integrante 4 - Notificações locais, despertador inteligente e entrega]
+
+[O que falar]
+"E agora chega o pânico de quem dorme tarde: o despertador inteligente. O app usa NotificationManagerCompat, canais de notificação, WorkManager e AlarmManager para criar alertas locais e programar lembretes. No Android 13+, a permissão de notificação precisa ser aceita, e o app trata isso com segurança."
+
+"Na parte de alarmes, o app dispara notificações com título e resumo claros, e também abre a Activity de despertador interativo. Lá aparece o toque do alarme, as opções de Soneca, Dispensar e ‘+Falta’, além dos sons de MyInstants, como um despertador que sabe que a noite foi longa e a aula não é opcional."
+
+"Temos também o BootReceiver, que faz o app reagendar o alarme após reinicialização do aparelho. Isso é importante porque o projeto não é só bonito na tela: ele pensa no comportamento real do usuário e na rotina contínua do semestre."
+
+"E para fechar com chave de ouro: entregamos o código-fonte e o APK no GitHub para o professor e a turma testarem, e estamos abertos para perguntas. O objetivo não era só criar um app; era construir uma ferramenta que entendesse o caos do estudante e ajudasse a sobreviver a ele com humor, lógica e tecnologia."
+
+[O que fazer na tela do celular ao vivo]
+- Abrir Configurações.
+- Alterar o horário do preview noturno.
+- Acionar a notificação local com título e resumo claros.
+- Mostrar o despertador tocando ao vivo.
+- Clicar em Soneca, Dispensar e “+Falta” para demonstrar os fluxos interativos.
+- Finalizar com a entrega do código-fonte e APK no GitHub.
+
+
+Encerramento da apresentação
+"Se a sua rotina é um caos, o app está aqui para te orientar. Se a sua produtividade não existe, o app te acorda. E se a sua falta ultrapassa o limite… bem, aí o SIGA na Cama entra em modo de missão falha e te lembra que a semana não vai esperar."
+
+"Muito obrigado! Estamos abertos para perguntas e para mostrar também o repositório, a arquitetura e os requisitos de disciplina em detalhes."
+
+
+Observações para a apresentação ao vivo
+- Falar com naturalidade e bom humor, sem soar técnico demais.
+- Dar atenção ao dilema do estudante às 6h da manhã e ao humor da aplicação.
+- Mostrar telas em sequência: Onboarding → Home → Eventos → Configurações → Alarme.
+- Citar os nomes dos componentes tecnológicos de forma simples e clara: Navigation Compose, DataStore, Room, Retrofit, NotificationCompat, WorkManager e AlarmManager.
+- Se o professor pedir mais detalhes, explicar que o app salva dados, respeita feriados, evita perda de registros e funciona mesmo offline.
