@@ -8,7 +8,9 @@
 
 `HolidayApiService.kt` consulta de forma assíncrona `GET https://brasilapi.com.br/api/feriados/v1/{year}` e converte a resposta em `HolidayDto` (`date`, `name` e `type`). O `HolidayRepository.isHoliday(LocalDate)` combina essa resposta com os feriados fixos de 9 de julho (estadual de São Paulo) e 8 de dezembro (municipal de Diadema); os feriados nacionais são armazenados em memória por ano. As datas anuais de calendário acadêmico ou institucionais — por exemplo, Carnaval, Corpus Christi e folgas definidas pela Fatec — continuam na fonte acadêmica e são sincronizadas separadamente no Room. Por isso, retirar duplicatas nacionais do JSON não remove as datas específicas da instituição.
 
-O modo automático do `AlarmScheduler` percorre datas futuras em que há aula e pula as que `HolidayRepository` identificar como feriado. Se a API falhar durante essa validação, o alarme diário automático é cancelado para evitar um disparo em data não validada; o erro e a decisão são registrados no log. O modo manual não consulta a API de feriados.
+A fonte única de decisão do app é `AcademicRepository.isAcademicHoliday(date)`: ela checa primeiro `eventDao.getHolidaysByDate(date.toString())` e depois consulta `HolidayRepository.isHoliday(date)`, usando `runCatching { ... }.getOrDefault(false)` para não quebrar o agendamento se a rede ou o banco estiverem instáveis. Isso centraliza a regra e impede o registro de faltas em feriados e a criação de alarme em datas inválidas.
+
+O modo automático do `AlarmScheduler` percorre datas futuras em que há aula e pula as que a regra unificada identificar como feriado. Se a validação de feriado falhar por qualquer motivo, o scheduler entra em fallback seguro e não aborta o restante do agendamento; o modo manual continua funcionando independentemente do serviço. O app também bloqueia o botão de registrar falta quando `isAcademicHoliday` retorna `true`.
 
 ## Sons do MyInstants Brasil
 
@@ -24,6 +26,10 @@ O repositório analisa o HTML recebido em tempo de execução por regex, extrain
 ## Safe Search acadêmica
 
 O modal inicia com a busca temática “bom dia” para evitar que o ranking geral seja a primeira lista apresentada. A lista `blockedKeywords` no repositório filtra localmente, sem distinção entre maiúsculas e minúsculas, qualquer resultado cujo título, ID ou URL contenha termos bloqueados. O filtro também é aplicado aos resultados de “Em Alta BR”; ele reduz a exposição acidental de conteúdo impróprio/NSFW, mas não substitui moderação editorial do catálogo remoto.
+
+## Permissões no Android 13+
+
+A partir do Android 13 (`Build.VERSION_CODES.TIRAMISU`), o app exige a permissão `POST_NOTIFICATIONS` para exibir alertas locais e preview. O pedido ocorre no onboarding e em Configurações, antes de permitir que o usuário finalize o processo ou ative notificações/preview. Quando a permissão ainda não foi liberada, o fluxo chama o launcher do sistema e aguarda o resultado antes de continuar.
 
 ## Cache de áudio
 

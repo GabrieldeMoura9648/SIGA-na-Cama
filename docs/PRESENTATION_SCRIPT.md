@@ -33,7 +33,7 @@
   4. Vá em **+ Matéria Extra**, tente adicionar uma DP no mesmo horário de outra aula. Mostre o aviso de *"Conflito de horário"* substituindo a matéria na grade!
 * **O que falar (marcando +2 requisitos):**
   > "Mas de onde vieram todas essas matérias de DSM? Da nossa **API REST** (`FatecApiService.kt`)! Quando abrimos o app, ele faz um *Auto-Sync*: o Retrofit baixa a grade e o calendário acadêmico da nuvem e faz um *Smart Merge* para o nosso banco local de forma 100% transparente.
-  > Salvamos isso no nosso **SQLite via Room Database** (`AppDatabase.kt`). O mais legal é o nosso **Gerenciador de Conflitos**: se eu puxar uma matéria de DP e ela cair exatamente no mesmo dia e horário da minha grade normal, o banco intercepta a intersecção de dias e já avisa na tela, permitindo substituir uma pela outra para a grade não bugar, respeitando as regras do SIGA!"
+  > Salvamos isso no nosso **SQLite via Room Database** (`AppDatabase.kt`). O mais legal é o nosso **Gerenciador de Conflitos**: se eu puxar uma matéria de DP e ela cair exatamente no mesmo dia e horário da minha grade normal, o banco intercepta a intersecção de dias e já avisa na tela, permitindo substituir uma pela outra para a grade não bugar, respeitando as regras do SIGA! A regra de feriado também ficou centralizada em `AcademicRepository.isAcademicHoliday`, combinando Room e BrasilAPI sem depender de uma única fonte vulnerável."
 
 ---
 
@@ -51,7 +51,7 @@
 
 * **O que fazer na tela:**
   1. Em **Alarme Matinal Real**, mostre os modos **Automático (Pela 1ª aula)** e **Manual (Fixo)**. No automático, escolha uma antecedência; no manual, configure um horário fixo.
-  2. Explique que o modo automático consulta a primeira aula futura e pula feriados nacionais da BrasilAPI, além de 9 de julho (SP) e 8 de dezembro (Diadema). Carnaval, Corpus Christi e folgas institucionais continuam no calendário acadêmico.
+  2. Explique que o modo automático consulta a primeira aula futura e, na regra unificada, pula feriados vindos da BrasilAPI, feriados locais de São Paulo/Diadema e eventos cadastrados no Room. O app também não registra falta em feriado e usa fallback seguro se a rede falhar.
   3. Em **Som Atual**, abra **Escolher Meme / Som da API**. Mostre a busca inicial temática e os chips de sons do MyInstants Brasil; pré-visualize um resultado e selecione-o para baixar e salvar no cache local.
   4. Em **Preview na Noite Anterior**, mostre o horário padrão **21:00**, abra **Alterar horário do preview** e explique que a escolha é salva e reagendada.
   5. Clique em **"Testar Preview de Amanhã (5s)"** para mostrar a notificação chegando no topo. Ela usa o título **"Agenda de Amanhã — SIGA na Cama"** e traz aulas, resumo acadêmico e estado do despertador.
@@ -60,5 +60,5 @@
   8. Volte para a Home e mostre que a falta foi registrada sozinha no banco!
 * **O que falar (marcando o 5º requisito com chave de ouro):**
   > "Para fechar o 5º requisito obrigatório de **Notificações Locais**, nós fomos além: temos o `WorkManager` (`DailyCheckWorker.kt`) que manda notificações diárias e um preview na noite anterior, em um horário escolhido pelo aluno, dizendo como será o dia seguinte.
-  > O **Despertador Inteligente** pode usar um horário manual ou calcular o toque pela primeira aula em um dia letivo futuro, descontando a antecedência escolhida. No modo automático, ele consulta os feriados nacionais na BrasilAPI e também considera datas estaduais e municipais de São Paulo e Diadema; datas específicas da Fatec permanecem no calendário acadêmico. Se não for possível validar o feriado, o alarme automático é cancelado por segurança. Também dá para buscar sons no MyInstants Brasil, ouvir uma prévia e manter o MP3 selecionado no cache privado para uso offline. Se o arquivo personalizado falhar, o app tenta o toque de alarme nativo do Android.
-  > Quando o alarme toca, você não precisa fazer conta de cabeça: confira o resumo da sua grade e aperte **'Vou Faltar Hoje'** direto no despertador; ele soma as faltas do dia automaticamente no SQLite. Muito obrigado!"
+  > O **Despertador Inteligente** pode usar um horário manual ou calcular o toque pela primeira aula em um dia letivo futuro, descontando a antecedência escolhida. No modo automático, ele usa a regra unificada de feriados e ignora datas nacionais, estaduais, municipais e institucionais sem travar o agendamento; se a validação falhar, o app entra em fallback seguro em vez de quebrar o alarme. Também dá para buscar sons no MyInstants Brasil, ouvir uma prévia e manter o MP3 selecionado no cache privado para uso offline. Se o arquivo personalizado falhar, o app tenta o toque de alarme nativo do Android.
+  > A restauração após reinicialização do Android também ficou pronta com `BootReceiver`, que reprograma o alarme e o preview a partir do DataStore. Quando o alarme toca, você não precisa fazer conta de cabeça: confira o resumo da sua grade e aperte **'Vou Faltar Hoje'** direto no despertador; ele soma as faltas do dia automaticamente no SQLite. Muito obrigado!"

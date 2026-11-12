@@ -20,9 +20,11 @@ Conciliar horários, provas e frequência pode gerar ansiedade e decisões basea
 - **Eventos:** agenda de eventos e datas cadastradas.
 - **Matéria Extra:** seleção de semestre e catálogo por dropdown, além de cadastro manual.
 - **Configurações:** semestre, notificações, horário do alarme, horário do preview noturno e sincronização.
-- **Despertador inteligente:** modo manual com horário fixo ou modo automático calculado a partir da primeira aula em um dia letivo futuro, com antecedência configurável. No automático, ignora feriados nacionais consultados na BrasilAPI e feriados estaduais/municipais cadastrados para São Paulo e Diadema; inclui alarme em tela cheia, soneca de 10 minutos, dispensar e registro das faltas das disciplinas com aula hoje.
+- **Despertador inteligente:** modo manual com horário fixo ou modo automático calculado a partir da primeira aula em um dia letivo futuro, com antecedência configurável. No automático, ignora feriados nacionais consultados na BrasilAPI, feriados estaduais/municipais cadastrados para São Paulo e Diadema e feriados acadêmicos salvos no Room; inclui alarme em tela cheia, soneca de 10 minutos, dispensar e registro das faltas das disciplinas com aula hoje.
+- **Restauração após reinicialização:** `BootReceiver` restaura automaticamente o despertador e o preview noturno ao ligar o Android, reaproveitando as preferências do DataStore e os sons personalizados já salvos.
 - **Sons personalizados:** busca de sons do MyInstants Brasil com Safe Search acadêmico, prévia em streaming e download para cache privado offline; se o áudio personalizado falhar, o alarme tenta tocar o ringtone nativo do Android.
 - **Preview noturno:** notificação “Agenda de Amanhã — SIGA na Cama” com as aulas, o veredito do dia seguinte e o estado do despertador. O horário é configurável (padrão 21:00).
+- **Permissões Android 13+:** no onboarding e nas configurações, o app solicita `POST_NOTIFICATIONS` quando necessário, conforme a política do sistema operacional.
 
 ## Requisitos acadêmicos atendidos
 
@@ -30,9 +32,9 @@ Conciliar horários, provas e frequência pode gerar ansiedade e decisões basea
 - ✅ **Preferências assíncronas:** DataStore para apelido, semestre, URL da API, notificações, onboarding, alarmes e horário do preview noturno.
 - ✅ **Persistência local:** Room sobre SQLite para disciplinas, eventos, desculpas e edições personalizadas.
 - ✅ **API REST:** Retrofit/Gson para sincronizar o catálogo JSON; em caso de falha, o repositório repõe os dados locais de `DefaultFatecData`.
-- ✅ **Consulta de feriados:** Retrofit/Gson consulta a BrasilAPI por ano; o modo automático também reconhece 9 de julho (São Paulo) e 8 de dezembro (Diadema). A consulta é assíncrona e os resultados nacionais são mantidos em memória durante a execução.
+- ✅ **Consulta de feriados unificada:** o `AcademicRepository.isAcademicHoliday(date)` combina `eventDao.getHolidaysByDate(date.toString())` com o `HolidayRepository` (BrasilAPI + São Paulo + Diadema) e trata falhas sem bloquear o agendamento. O modo automático pula feriados consultados e feriados institucionais persistidos no Room.
 - ✅ **Sons externos e conectividade:** OkHttp consulta diretamente o MyInstants Brasil; o parser HTML usa UTF-8 e blacklist local. O áudio selecionado é armazenado em cache privado para reprodução offline.
-- ✅ **Notificações e alarmes:** WorkManager para tarefas periódicas/adiáveis; AlarmManager para alarme diário, soneca e preview, com fallback inexato quando o sistema não autoriza alarme exato.
+- ✅ **Notificações e alarmes:** WorkManager para tarefas periódicas/adiáveis; `BootReceiver` restaura alarmes após reinicialização do dispositivo; `AlarmManager` dispara alarme diário, soneca e preview, com fallback inexato quando o sistema não autoriza alarme exato.
 
 **Nota sobre os dados acadêmicos:** `fatec_api.json` é a fonte configurada para sincronização da grade e do calendário acadêmico; o fallback de catálogo executado em runtime usa `DefaultFatecData`, não o asset JSON. Os feriados nacionais fixos foram removidos do JSON por serem consultados à BrasilAPI. Permanecem no calendário acadêmico Carnaval, Sexta-feira Santa, Corpus Christi e datas institucionais como a folga do Dia do Professor e o Dia do Servidor Público. Se a consulta de feriados nacionais falhar, o modo automático cancela o alarme diário por segurança; o modo manual não depende dessa consulta. A disponibilidade do alarme exato também depende da versão do Android e da permissão concedida pelo usuário.
 
@@ -50,7 +52,7 @@ Conciliar horários, provas e frequência pode gerar ansiedade e decisões basea
 | WorkManager | Notificações e tarefas adiáveis |
 | AlarmManager | Disparos de relógio para alarme e preview |
 
-Os fluxos de APIs, feriados, agendamento inteligente, sons, cache offline e fallback estão documentados em [`docs/CODE_ARCHITECTURE.md`](docs/CODE_ARCHITECTURE.md), [`docs/API.md`](docs/API.md) e [`docs/OFFLINE_FIRST.md`](docs/OFFLINE_FIRST.md).
+Os fluxos de APIs, feriados, agendamento inteligente, restauração após boot, permissão de notificações e fallback estão documentados em [`docs/CODE_ARCHITECTURE.md`](docs/CODE_ARCHITECTURE.md), [`docs/API.md`](docs/API.md) e [`docs/OFFLINE_FIRST.md`](docs/OFFLINE_FIRST.md).
 
 O projeto usa Gradle Kotlin DSL, Version Catalog e um único módulo Android, `:app`. A configuração declara `minSdk 26`, `compileSdk 36` e `targetSdk 36`.
 
@@ -58,7 +60,7 @@ O projeto usa Gradle Kotlin DSL, Version Catalog e um único módulo Android, `:
 
 - A consulta diária compara as aulas previstas para o dia com o limite de faltas salvo na disciplina.
 - Ao registrar uma falta pelo card ou pelo despertador, o app soma o bloco de aulas do encontro (`classesPerDay`); ajustes finos podem ser feitos no diálogo de edição.
-- O veredito considera feriados/domingos e dias sem aula, eventos críticos, limite absoluto e margem fixa de segurança. O agendamento automático pula feriados nacionais consultados na BrasilAPI e os feriados fixos de São Paulo e Diadema.
+- O veredito considera feriados/domingos e dias sem aula, eventos críticos, limite absoluto e margem fixa de segurança. O agendamento automático pula feriados nacionais consultados na BrasilAPI, os feriados fixos de São Paulo e Diadema e os feriados acadêmicos persistidos no Room.
 - O app alerta sobre a perda do Exame Final quando reprovação por frequência é prevista e diferencia a mensagem para disciplinas extensionistas.
 - Quando a próxima falta excederia o limite da disciplina, o alerta identifica a reprovação por frequência com o título “GAME OVER”.
 - As informações sobre atestados e Regime Domiciliar são orientativas e devem ser confirmadas com os canais oficiais da Fatec.
@@ -85,6 +87,6 @@ Veja a arquitetura e o fluxo de agendamento em [`docs/CODE_ARCHITECTURE.md`](doc
 
 ## Permissões e demonstração
 
-O Android pode solicitar autorização para notificações e alarmes exatos. Em **Configurações > Despertador & Preview**, o usuário pode ativar o preview noturno e escolher seu horário; o padrão é **21:00**. O preview usa o título **“Agenda de Amanhã — SIGA na Cama”** e apresenta disciplinas previstas, o veredito do dia seguinte e o estado do despertador. Para testar o despertador, conceda as permissões exibidas e use **Testar Alarme Real (5s)**. Para conferir o botão **Vou Faltar Hoje (+Falta)**, a grade precisa ter disciplinas com aula na data corrente.
+O Android pode solicitar autorização para notificações e alarmes exatos. Em **Configurações > Despertador & Preview**, o usuário pode ativar o preview noturno e escolher seu horário; o padrão é **21:00**. No Android 13+, o app também solicita `POST_NOTIFICATIONS` no onboarding e nas configurações, quando necessário. O preview usa o título **“Agenda de Amanhã — SIGA na Cama”** e apresenta disciplinas previstas, o veredito do dia seguinte e o estado do despertador. Para testar o despertador, conceda as permissões exibidas e use **Testar Alarme Real (5s)**. Para conferir o botão **Vou Faltar Hoje (+Falta)**, a grade precisa ter disciplinas com aula na data corrente.
 
 Consulte o roteiro de demonstração em [`docs/PRESENTATION_SCRIPT.md`](docs/PRESENTATION_SCRIPT.md) e o mapa de camadas em [`docs/CODE_ARCHITECTURE.md`](docs/CODE_ARCHITECTURE.md).

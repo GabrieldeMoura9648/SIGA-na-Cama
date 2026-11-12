@@ -53,10 +53,12 @@ Este guia foi feito para explicar o código para o professor sem enrolação. Em
   1. **Notificação na Barra de Status (`WorkManager`):** O `DailyCheckWorker` avalia o dia seguinte. No preview noturno, cria uma notificação com o título **“Agenda de Amanhã — SIGA na Cama”** e um corpo com as disciplinas e horários, o resumo de frequência e o estado do despertador.
   2. **Despertador de Verdade (`AlarmManager`):** Acende a tela bloqueada do celular na hora exata com o resumo da grade e o botão **"🛌 Vou Faltar Hoje (+Falta)"**, que já soma a falta direto no SQLite e deixa você voltar a dormir.
 * **Preview noturno configurável:** `UserPreferencesRepository` persiste hora e minuto separados, com padrão 21:00. `SettingsScreen` usa um `TimePickerDialog`; ao salvar, `SettingsViewModel` atualiza a preferência e reagenda o preview se ele estiver ativo. `AlarmScheduler.scheduleNightPreview()` calcula o próximo disparo no horário escolhido, hoje ou no dia seguinte, conforme o horário atual. Ao disparar, `AlarmReceiver` agenda o próximo preview e encaminha a avaliação ao `DailyCheckWorker`.
+* **Restauração após boot:** `BootReceiver` escuta `ACTION_BOOT_COMPLETED`, lê as preferências do DataStore e reprograma o alarme e o preview quando o aparelho reinicia. Isso mantém os agendamentos mesmo sem interação do usuário após um reboot.
+* **Permissões do sistema:** no Android 13+, o app solicita `POST_NOTIFICATIONS` no onboarding e no fluxo de configurações antes de disparar notificações; isso é controlado por `rememberLauncherForActivityResult` nos composables correspondentes.
 * **Onde abrir para mostrar ao professor:**
   * Criação da Notificação: acesse na pasta `app/src/main/java/com/example/fatecskip/worker/NotificationHelper.kt`
   * Trabalho em 2º plano: acesse na pasta `app/src/main/java/com/example/fatecskip/worker/DailyCheckWorker.kt`
-  * Despertador e preview: acesse `app/src/main/java/com/example/fatecskip/worker/AlarmScheduler.kt` e `app/src/main/java/com/example/fatecskip/worker/AlarmReceiver.kt`
+  * Despertador, preview e restauração após reinício: acesse `app/src/main/java/com/example/fatecskip/worker/AlarmScheduler.kt`, `app/src/main/java/com/example/fatecskip/worker/AlarmReceiver.kt` e `app/src/main/java/com/example/fatecskip/worker/BootReceiver.kt`
   * Preferências e seletor de horário: acesse `app/src/main/java/com/example/fatecskip/data/preferences/UserPreferencesRepository.kt` e `app/src/main/java/com/example/fatecskip/ui/screens/settings/SettingsScreen.kt`
 
 ---

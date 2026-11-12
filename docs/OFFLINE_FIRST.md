@@ -10,7 +10,9 @@ O alarme toca esse arquivo local; portanto, depois de baixado, o som personaliza
 
 `HolidayRepository` consulta a BrasilAPI de forma assíncrona e mantém a lista nacional em memória por ano durante a execução atual. Os feriados fixos de 9 de julho (São Paulo) e 8 de dezembro (Diadema) são reconhecidos localmente, sem rede. Os feriados específicos da Fatec — como Carnaval, Corpus Christi e folgas institucionais — continuam no calendário acadêmico configurado em `fatec_api.json` e são sincronizados separadamente para a agenda e as notificações.
 
-O agendamento automático precisa validar o próximo dia letivo pela BrasilAPI. Se a consulta falhar e não houver dados nacionais disponíveis em cache na execução, o scheduler cancela o alarme diário automático por segurança e registra a falha no log; ele não assume que o dia seja letivo. O modo manual do despertador continua funcionando sem a consulta de feriados. A lista recebida da BrasilAPI não é persistida em disco, então a consulta pode ser necessária novamente após o processo do app ser encerrado.
+A regra final de feriado foi unificada em `AcademicRepository.isAcademicHoliday(date)`: ele combina `eventDao.getHolidaysByDate(date.toString())` com a verificação da BrasilAPI e considera a data como feriado apenas se alguma fonte confirmar. Falhas de rede ou de banco são tratadas com `runCatching` e retornam `false`, sem bloquear o restante do agendamento. Isso evita que o app pare de disparar alarmes por uma consulta externa instável.
+
+O agendamento automático continua validando os próximos dias letivos, mas usa a fonte unificada e fallback seguro em vez de cancelar o alarme por completo. O modo manual do despertador continua funcionando sem depender de feriados. A lista recebida da BrasilAPI não é persistida em disco, então a consulta pode ser necessária novamente após o processo do app ser encerrado.
 
 ## Fail-Safe no toque do alarme
 
@@ -20,4 +22,6 @@ O fallback usa `RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)` e rep
 
 ## Agendamento
 
-O `AlarmScheduler` usa `AlarmManager` para os disparos diários, a soneca e o preview noturno. O horário do preview é salvo no Preferences DataStore como hora e minuto, com padrão 21:00, e pode ser alterado em Configurações. Ao mudar o horário com o preview ativo, o próximo disparo é reagendado; após cada disparo normal, o `AlarmReceiver` agenda o seguinte. Quando alarmes exatos não são permitidos pelo sistema, usa `setAndAllowWhileIdle` como alternativa menos precisa. As regras do modo automático e manual estão descritas em [`CODE_ARCHITECTURE.md`](CODE_ARCHITECTURE.md#despertador-inteligente-automático-e-manual).
+O `AlarmScheduler` usa `AlarmManager` para os disparos diários, a soneca e o preview noturno. O horário do preview é salvo no Preferences DataStore como hora e minuto, com padrão 21:00, e pode ser alterado em Configurações. Ao mudar o horário com o preview ativo, o próximo disparo é reagendado; após cada disparo normal, o `AlarmReceiver` agenda o seguinte. Quando alarmes exatos não são permitidos pelo sistema, usa `setAndAllowWhileIdle` como alternativa menos precisa. O `BootReceiver` também lê as preferências do DataStore e reaproveita o agendamento após reinicialização do Android, mantendo o despertador e o preview ativos sem intervenção do usuário.
+
+As regras do modo automático e manual estão descritas em [`CODE_ARCHITECTURE.md`](CODE_ARCHITECTURE.md#despertador-inteligente-automático-e-manual).
