@@ -16,8 +16,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 
-import kotlinx.coroutines.launch
-
 class FatecSkipApp : Application() {
 
     lateinit var database: AppDatabase
@@ -61,8 +59,11 @@ class FatecSkipApp : Application() {
     private fun scheduleSavedAlarms() {
         CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
             preferencesRepository.alarmEnabledFlow
-                .collect { enabled ->
-                    if (enabled) {
+                .combine(preferencesRepository.isOnboardingCompletedFlow) { enabled, onboardingCompleted ->
+                    enabled && onboardingCompleted
+                }
+                .collect { shouldSchedule ->
+                    if (shouldSchedule) {
                         AlarmScheduler.scheduleDailyAlarm(this@FatecSkipApp)
                     } else {
                         AlarmScheduler.cancelAlarm(this@FatecSkipApp)
@@ -71,13 +72,17 @@ class FatecSkipApp : Application() {
         }
 
         CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
-            preferencesRepository.nightPreviewEnabledFlow.collect { enabled ->
-                if (enabled) {
-                    AlarmScheduler.scheduleNightPreview(this@FatecSkipApp)
-                } else {
-                    AlarmScheduler.cancelNightPreview(this@FatecSkipApp)
+            preferencesRepository.nightPreviewEnabledFlow
+                .combine(preferencesRepository.isOnboardingCompletedFlow) { enabled, onboardingCompleted ->
+                    enabled && onboardingCompleted
                 }
-            }
+                .collect { shouldSchedule ->
+                    if (shouldSchedule) {
+                        AlarmScheduler.scheduleNightPreview(this@FatecSkipApp)
+                    } else {
+                        AlarmScheduler.cancelNightPreview(this@FatecSkipApp)
+                    }
+                }
         }
     }
 

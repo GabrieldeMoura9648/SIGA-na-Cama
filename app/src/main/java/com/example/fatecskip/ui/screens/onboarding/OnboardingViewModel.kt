@@ -49,10 +49,9 @@ class OnboardingViewModel(
             val nameToSave = _nickname.value.ifBlank { "Guerreiro da Fatec" }
             preferencesRepository.setStudentNickname(nameToSave)
             preferencesRepository.setSelectedSemester(_selectedSemester.value)
-            preferencesRepository.setOnboardingCompleted(true)
-            
-            // Dispara a sincronização de dados antes de ir para a Home
+
             repository.syncFromApi(_selectedSemester.value)
+            preferencesRepository.setOnboardingCompleted(true)
 
             onSuccess()
         }

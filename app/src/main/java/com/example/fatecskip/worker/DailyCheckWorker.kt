@@ -25,8 +25,9 @@ class DailyCheckWorker(
     override suspend fun doWork(): Result {
         return try {
             val preferences = UserPreferencesRepository(context)
+            val isOnboardingCompleted = preferences.isOnboardingCompletedFlow.first()
             val notificationsEnabled = preferences.notificationsEnabledFlow.first()
-            if (!notificationsEnabled) {
+            if (!isOnboardingCompleted || !notificationsEnabled) {
                 return Result.success()
             }
 
@@ -149,6 +150,7 @@ class DailyCheckWorker(
 
         fun schedulePeriodicCheck(context: Context) {
             val workRequest = PeriodicWorkRequestBuilder<DailyCheckWorker>(24, TimeUnit.HOURS)
+                .setInitialDelay(6, TimeUnit.HOURS)
                 .addTag(PERIODIC_WORK_TAG)
                 .build()
 

@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
 import java.time.LocalDateTime
 import java.time.ZoneId
+import java.util.Calendar
 import java.util.regex.Pattern
 
 object AlarmScheduler {
@@ -134,13 +135,26 @@ object AlarmScheduler {
 
     suspend fun scheduleNightPreview(context: Context): Boolean {
         val preferences = (context.applicationContext as FatecSkipApp).preferencesRepository
+        if (!preferences.isOnboardingCompletedFlow.first()) return false
+
         val hour = preferences.nightPreviewHourFlow.first()
         val minute = preferences.nightPreviewMinuteFlow.first()
-        val now = LocalDateTime.now()
-        var nextPreview = now.toLocalDate().atTime(hour, minute)
-        if (!nextPreview.isAfter(now)) nextPreview = nextPreview.plusDays(1)
-        val triggerAtMillis = nextPreview.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
-        return schedule(context, TYPE_NIGHT_PREVIEW, REQUEST_NIGHT_PREVIEW, triggerAtMillis)
+        val now = Calendar.getInstance()
+        val nextPreview = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, hour)
+            set(Calendar.MINUTE, minute)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+        if (!nextPreview.after(now)) {
+            nextPreview.add(Calendar.DAY_OF_YEAR, 1)
+        }
+        return schedule(
+            context,
+            TYPE_NIGHT_PREVIEW,
+            REQUEST_NIGHT_PREVIEW,
+            nextPreview.timeInMillis
+        )
     }
 
     fun scheduleTestNightPreviewInSeconds(context: Context, seconds: Int = 5): Boolean {
